@@ -1,817 +1,623 @@
 --==================================================================
--- Syntax — Blox Fruits PvP Suite v5
--- Menu: RightShift (bindable) | Combo: LeftAlt | Mobile: draggable icon
+-- Syntax — Blox Fruits PvP Suite (ALL-IN-ONE)
+-- Вкладки: Combat / Player / Movement / Visuals / Farming / Combos / Misc / Settings
+-- Открытие: RightShift
+-- Запуск: loadstring(game:HttpGet("https://raw.githubusercontent.com/zimiri/Opross/refs/heads/main/GUI.lua?t="..os.time()))()
 --==================================================================
 
-local Players      = game:GetService("Players")
-local UIS          = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local UIS          = game:GetService("UserInputService")
+local Players      = game:GetService("Players")
 local RunService   = game:GetService("RunService")
+local HttpService  = game:GetService("HttpService")
+local Stats        = game:GetService("Stats")
 local LP           = Players.LocalPlayer
-local cam          = workspace.CurrentCamera
 
 --==================================================================
--- THEME
+-- ПАЛИТРА
 --==================================================================
-local Theme = {
-    bg = Color3.fromRGB(13,13,17), bg2 = Color3.fromRGB(20,20,28),
-    panel = Color3.fromRGB(22,22,30), card = Color3.fromRGB(30,30,40),
-    accent = Color3.fromRGB(255,75,75), accent2 = Color3.fromRGB(180,40,90),
-    text = Color3.fromRGB(238,238,242), dim = Color3.fromRGB(150,150,162),
-    off = Color3.fromRGB(48,48,60)
+local Colors = {
+    bg=Color3.fromRGB(26,26,26), dark=Color3.fromRGB(13,13,13), panel=Color3.fromRGB(31,31,31),
+    panel2=Color3.fromRGB(22,22,22), hover=Color3.fromRGB(42,42,42), accent=Color3.fromRGB(255,59,59),
+    accent2=Color3.fromRGB(139,0,0), text=Color3.fromRGB(255,255,255), sub=Color3.fromRGB(170,170,170),
+    success=Color3.fromRGB(59,255,110), warn=Color3.fromRGB(255,200,59), error=Color3.fromRGB(255,59,59),
+    off=Color3.fromRGB(68,68,68)
 }
 
 --==================================================================
--- LANGUAGE
+-- ХЕЛПЕРЫ
 --==================================================================
-local Strings = {
-    en = {
-        title="Syntax", subtitle="Blox Fruits · PvP",
-        tab_pvp="PvP", tab_visual="Visual", tab_misc="Settings",
-        aimbot="Aimbot", aim_range="Aim Range", aim_fov="Aim FOV", aim_smooth="Aim Smoothness",
-        aim_key="Aim Key", aim_predict="Prediction", aim_visible="Visible only",
-        autoparry="Auto Parry", dash_key="Dash Key", look_key="Look Key",
-        combo_speed="Combo Speed", combo_library="Combo Library",
-        esp="ESP Players", esp_names="ESP Names", esp_distance="ESP Distance",
-        menu_key="Menu Key", language="Language", anti_afk="Anti-AFK",
-        run="RUN", stop="STOP", combo_title="Combo Library · Fruits", none="—"
-    },
-    ru = {
-        title="Syntax", subtitle="Blox Fruits · PvP",
-        tab_pvp="PvP", tab_visual="Визуал", tab_misc="Настройки",
-        aimbot="Аимбот", aim_range="Дальность аима", aim_fov="Угол аима", aim_smooth="Плавность аима",
-        aim_key="Клавиша аима", aim_predict="Предсказание", aim_visible="Только видимые",
-        autoparry="Авто-парри", dash_key="Клавиша рывка", look_key="Клавиша обзора",
-        combo_speed="Скорость комбо", combo_library="Библиотека комбо",
-        esp="ESP игроков", esp_names="ESP ники", esp_distance="ESP дистанция",
-        menu_key="Клавиша меню", language="Язык", anti_afk="Анти-AFK",
-        run="ЗАПУСТИТЬ", stop="СТОП", combo_title="Библиотека комбо · Фрукты", none="—"
-    }
-}
-local Lang = "en"
-local function L(key)
-    return (Strings[Lang] and Strings[Lang][key]) or Strings.en[key] or key
-end
-local localized = {}
-local function loc(obj, key)
-    localized[#localized+1] = { obj = obj, key = key }
-    obj.Text = L(key)
-end
-local function applyLanguage()
-    for _, e in ipairs(localized) do pcall(function() e.obj.Text = L(e.key) end) end
-end
-
-getgenv().SyntaxFlags = getgenv().SyntaxFlags or {}
-local Flags = getgenv().SyntaxFlags
-
---==================================================================
--- HELPERS
---==================================================================
+local function new(c,p,par) local o=Instance.new(c); for k,v in pairs(p or {}) do o[k]=v end; if par then o.Parent=par end; return o end
 local function corner(o,r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=o; return c end
-local function stroke(o,c,t,tr) local s=Instance.new("UIStroke"); s.Color=c or Color3.fromRGB(255,255,255); s.Thickness=t or 1; s.Transparency=tr or 0.8; s.Parent=o; return s end
-local function tween(o,t,p,s) local tw=TweenService:Create(o,TweenInfo.new(t or 0.15,s or Enum.EasingStyle.Quint,Enum.EasingDirection.Out),p); tw:Play(); return tw end
+local function stroke(o,col,t,tr) local s=Instance.new("UIStroke"); s.Color=col or Colors.accent; s.Thickness=t or 1; s.Transparency=tr or 0; s.Parent=o; return s end
 local function grad(o,c1,c2,rot) local g=Instance.new("UIGradient"); g.Color=ColorSequence.new(c1,c2); g.Rotation=rot or 0; g.Parent=o; return g end
+local function tw(o,t,p,s) local a=TweenService:Create(o,TweenInfo.new(t or 0.15,s or Enum.EasingStyle.Quart,Enum.EasingDirection.Out),p); a:Play(); return a end
 
-local function getGuiParent()
+local function guiParent()
     if gethui then local ok,h=pcall(gethui); if ok and h then return h end end
     local ok,cg=pcall(function() return game:GetService("CoreGui") end)
     if ok and cg then return cg end
     return LP:WaitForChild("PlayerGui")
 end
-local guiParent = getGuiParent()
-
-local GUI = Instance.new("ScreenGui")
-GUI.Name="SyntaxUI"; GUI.ResetOnSpawn=false; GUI.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-GUI.IgnoreGuiInset=true; GUI.Parent=guiParent
-
-local MobileGui = Instance.new("ScreenGui")
-MobileGui.Name="SyntaxMobile"; MobileGui.ResetOnSpawn=false
-MobileGui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; MobileGui.IgnoreGuiInset=true
-MobileGui.Parent=guiParent
 
 --==================================================================
--- FRUIT ICONS (впиши свои rbxassetid://...)
+-- КОНФИГ
 --==================================================================
-local FruitIcons = {
-    -- ["Yeti"]="rbxassetid://0", ["Dough"]="rbxassetid://0", ["Light"]="rbxassetid://0",
+local canIO = (type(writefile)=="function") and (type(readfile)=="function")
+local Config = { path="syntax_config.json", data={} }
+local function loadCfg()
+    if not canIO then return end
+    if not (isfile and isfile(Config.path)) then return end
+    local ok,txt = pcall(readfile,Config.path)
+    if ok and txt and txt~="" then local ok2,t=pcall(HttpService.JSONDecode,HttpService,txt); if ok2 and type(t)=="table" then Config.data=t end end
+end
+local function saveCfg()
+    if not canIO then return end
+    pcall(writefile, Config.path, HttpService:JSONEncode(Config.data))
+end
+loadCfg()
+Config.data.flags = Config.data.flags or {}
+
+local function FlagsGet(k) return Config.data.flags[k] end
+local function FlagsSet(k,v) Config.data.flags[k]=v end
+
+--==================================================================
+-- COMBOS DB
+--==================================================================
+local Combos = {
+    ["Dough"] = {
+        {name="Spam", moves={"X","Z"}, target="Spam", difficulty="Very Easy"},
+        {name="Full", moves={"V","X","C","look_down","GH_Z","GH_C","GH_X"}, target="Instinct users", difficulty="Easy"},
+        {name="CDK", moves={"X","V","C","GH_Z","Anchor_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+        {name="Advanced", moves={"X","C","CDK_Z","Kabucha_X","V","X","GH_C_hold","CDK_X","GH_Z","GH_X"}, target="Experienced", difficulty="Hard"},
+    },
+    ["Spider"] = {
+        {name="Moonxyy", moves={"X","GravZ","Z","GH_Z","GH_X","GH_C","V","C"}, target="No Ken", difficulty="Easy"},
+        {name="Dark Blade", moves={"X","DB_Z","Eclaw_Z","Eclaw_C","DB_X","SoulGuitar_Z","V","Z"}, target="All", difficulty="Medium"},
+        {name="Sanguine", moves={"X","Z_hold","Sang_X","GravZ","V","Sang_C"}, target="All", difficulty="Medium"},
+    },
+    ["Leopard"] = {
+        {name="Simple", moves={"C","M1x3","Z"}, target="All", difficulty="Easy"},
+        {name="Full Fruit", moves={"M1","Z","F","X","C"}, target="All", difficulty="Easy"},
+        {name="Godhuman", moves={"C","GH_Z","Kabucha_X","Z","X"}, target="All", difficulty="Medium"},
+    },
+    ["Kitsune"] = {
+        {name="Gravity Blade", moves={"GravZ","SH_Z","VenomBow_Z","dash","SH_X","C","GravX","SH_C"}, target="Experienced", difficulty="Hard"},
+        {name="Sanguine", moves={"Sang_C","Yama_X","look_back","C","X","Sang_Z","F","Z"}, target="Ghoul race", difficulty="Hard"},
+        {name="Pure", moves={"C","X","Z","F","GravZ","M1x3"}, target="All", difficulty="Medium"},
+    },
+    ["Dragon"] = {
+        {name="Trident", moves={"C","DT_X","GH_X","GH_C","GH_Z"}, target="Tanks", difficulty="Medium"},
+        {name="Talon", moves={"DTalon_Z","C","DTalon_X","Dough_V","Dough_X"}, target="All", difficulty="Medium"},
+        {name="Eclaw", moves={"X","FlashStep","Eclaw_Z","TwinHooks_Z","C","Z","Eclaw_C"}, target="All", difficulty="Hard"},
+    },
+    ["Venom"] = {
+        {name="Gravity Blade", moves={"C","X","GravZ","Z_hold","GravX","VenomBow_Z"}, target="Tanks", difficulty="Medium"},
+        {name="Godhuman", moves={"C","GH_C","GravX","GravZ","GH_Z","X","Z_hold"}, target="All", difficulty="Medium"},
+        {name="CDK", moves={"X","Z","CDK_X","GH_Z","GH_C","C"}, target="All", difficulty="Medium"},
+        {name="Yama+Sang", moves={"X","TwinHooks_X","DTalon_X_hold","TwinHooks_Z","Z_hold","F","DTalon_Z","DTalon_C"}, target="Tanks", difficulty="Hard"},
+    },
+    ["Ice"] = {
+        {name="Beginner", moves={"V_unawk","C","Z","CDK_Z","CDK_X","look_back","Sang_C","Sang_Z","Sang_X"}, target="All", difficulty="Easy"},
+        {name="Godhuman", moves={"V_unawk","C","M1x2","Z","GH_Z","GH_C","SpikeyTrident_X","GH_X","X"}, target="All", difficulty="Easy"},
+    },
+    ["Rumble"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_C","M1x2","V"}, target="All", difficulty="Medium"},
+        {name="Sword", moves={"X","M1x3","C","GH_Z","V"}, target="All", difficulty="Medium"},
+    },
+    ["Dark"] = {
+        {name="Godhuman", moves={"C","X","V","GH_Z","GH_X","GH_C"}, target="All", difficulty="Medium"},
+        {name="Chop", moves={"DarkStep_V","Chop_Z","Chop_C","Chop_X","DarkStep_X","DarkStep_C","DarkStep_Z"}, target="All", difficulty="Easy"},
+    },
+    ["Buddha"] = {
+        {name="E-Claw", moves={"Yama_X","X","Eclaw_X","SoulGuitar_Z","V","C"}, target="All", difficulty="Easy"},
+        {name="Godhuman", moves={"Z","GH_Z","GH_X","C","V"}, target="All", difficulty="Easy"},
+    },
+    ["Gravity"] = {
+        {name="Dough", moves={"X_pull","Dough_C","Dough_X","Dough_V","CDK_Z","CDK_X","GH_Z","GH_C"}, target="All", difficulty="Medium"},
+        {name="Godhuman", moves={"X","V","GH_Z","GH_C","CDK_X","Z","GH_X","C"}, target="All", difficulty="Medium"},
+    },
+    ["Portal"] = {
+        {name="Canvander", moves={"Z","Canv_X","GH_Z","GH_C","V"}, target="All", difficulty="Medium"},
+        {name="TTK", moves={"Z","TTK_X","Sang_X","Sang_C","Sang_Z","TTK_Z"}, target="All", difficulty="Medium"},
+    },
+    ["Gas"] = {
+        {name="Godhuman", moves={"X","C","GH_Z","GH_X","V"}, target="All", difficulty="Medium"},
+        {name="Shark Anchor", moves={"X","SA_Z","C","GH_Z","V"}, target="All", difficulty="Medium"},
+    },
+    ["Spirit"] = {
+        {name="Godhuman", moves={"C","X","V","GH_Z","GH_C"}, target="Experienced", difficulty="Very Hard"},
+        {name="Sanguine", moves={"C","Sang_Z","X","Sang_C","V"}, target="Experienced", difficulty="Hard"},
+    },
+    ["Mammoth"] = {
+        {name="Godhuman", moves={"Z_trans","X","C","GH_Z","GH_X"}, target="Tanks", difficulty="Medium"},
+        {name="No Transform", moves={"X","C","GH_Z","Z"}, target="All", difficulty="Easy"},
+    },
+    ["Yeti"] = {
+        {name="Spikey Trident", moves={"C","ST_X","GH_X","GH_Z","GH_C","F","Z","X"}, target="Tanks", difficulty="Medium"},
+        {name="Pure Yeti", moves={"C","F","X","Z","M1"}, target="All", difficulty="Easy"},
+        {name="Gravity+Sang", moves={"GravZ","Sang_Z","Sang_C","F","GravX","Sang_X"}, target="All", difficulty="Medium"},
+    },
+    ["Diamond"] = {
+        {name="Simple", moves={"Z","X","C","SH_Z","SH_C"}, target="Beginner", difficulty="Easy"},
+    },
+    ["Quake"] = {
+        {name="Godhuman", moves={"X","C","V","GH_Z","GH_X"}, target="AoE", difficulty="Medium"},
+    },
+    ["Chop"] = {
+        {name="Acidum", moves={"Acidum_Z","Soru","Chop_X_hold","GH_Z","GH_C","CDK_X","Chop_C_hold","GH_X"}, target="All", difficulty="Medium"},
+    },
+    ["T-Rex"] = {
+        {name="CDK", moves={"CDK_X","X","C","GH_Z","GH_X","GH_C"}, target="Tanks", difficulty="Medium"},
+    },
+    ["Light"] = {
+        {name="Godhuman", moves={"V","C","Kabucha_X","GH_Z","GH_X","Z"}, target="All", difficulty="Easy"},
+        {name="Spikey+Sang", moves={"V","C","ST_X","Sang_Z","Sang_X","Sang_C","Z"}, target="All", difficulty="Medium"},
+        {name="DeathStep", moves={"Acidum_X","Acidum_Z","DS_X","DS_C_hold","X","V","Z","GravZ","C"}, target="All", difficulty="Hard"},
+        {name="Yama+Eclaw", moves={"Eclaw_C","Yama_X","V","X_hold","C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Shadow"] = {
+        {name="Talon+Grav", moves={"Z","GravZ","DTalon_Z","V","X","DTalon_C","DTalon_X"}, target="All", difficulty="Medium"},
+        {name="Godhuman", moves={"GH_C","ST_X","X","Z","GH_X","GH_Z","C"}, target="All", difficulty="Medium"},
+    },
+    ["Control"] = {
+        {name="Godhuman+Guitar", moves={"C","GH_X","GH_Z","GH_C","X","SoulGuitar_Z","F"}, target="All", difficulty="Medium"},
+        {name="Midnight+Sang", moves={"C","MB_Z","Sang_C","Sang_Z","X","F"}, target="All", difficulty="Medium"},
+    },
+    ["Tiger"] = {
+        {name="Hunt Loop", moves={"Z_ClawSwipe","X_dash","GH_Z","V_Hunt","GH_C","M1_spam"}, target="All", difficulty="Hard"},
+    },
+    ["Pain"] = {
+        {name="Gravity", moves={"GravZ","GH_C_hold","GH_C_hold","F"}, target="All", difficulty="Easy"},
+    },
+    ["Love"] = {
+        {name="Eclaw+Yama", moves={"Eclaw_C","Eclaw_Z","Yama_X","X","C","Z","Eclaw_X","Z"}, target="All", difficulty="Easy"},
+    },
+    ["Blizzard"] = {
+        {name="Godhuman", moves={"GH_C","C","GravZ","X","GH_Z","GH_X"}, target="Beginner", difficulty="Easy"},
+    },
+    ["Phoenix"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Magma"] = {
+        {name="Godhuman", moves={"V","C","X","GH_Z","GH_X","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Rubber"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Sand"] = {
+        {name="Sword", moves={"X","C","Kabucha_X","V","Z","ST_X","GH_Z","GH_X","GH_C"}, target="Sword users", difficulty="Medium"},
+    },
+    ["Flame"] = {
+        {name="Godhuman", moves={"V","C","X","GH_Z","GH_X","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Falcon"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Bomb"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Spike"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Spring"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Smoke"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Barrier"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Revive"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Creation"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Eagle"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Lightning"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Sound"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Ghost"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Rocket"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
+    ["Spin"] = {
+        {name="Godhuman", moves={"C","V","X","GH_Z","GH_C","Z"}, target="All", difficulty="Medium"},
+    },
+    ["Blade"] = {
+        {name="Godhuman", moves={"C","X","GH_Z","GH_X","V"}, target="All", difficulty="Easy"},
+    },
 }
 
 --==================================================================
--- WINDOW
+-- COMBO EXECUTOR
 --==================================================================
-local Window = {}; Window.__index = Window
+local Camera = workspace.CurrentCamera
+local function press(k) pcall(function() keypress(k) end) end
+local function release(k) pcall(function() keyrelease(k) end) end
+local function click() pcall(function() mouse1click() end) end
 
-function Window.new(title, subtitle)
-    local self = setmetatable({ tabs = {}, activeTab = nil }, Window)
-    local main = Instance.new("Frame")
-    main.Name="Window"; main.Size=UDim2.fromOffset(540,380); main.Position=UDim2.new(0.5,-270,0.5,-190)
-    main.BackgroundColor3=Theme.bg; main.BackgroundTransparency=0.05; main.BorderSizePixel=0; main.Parent=GUI
-    corner(main,12); stroke(main,Color3.fromRGB(255,255,255),1,0.88); grad(main,Theme.bg,Theme.bg2,90)
-
-    local glow = Instance.new("Frame")
-    glow.Size=UDim2.new(1,12,1,12); glow.Position=UDim2.fromOffset(-6,-6); glow.BackgroundColor3=Theme.accent
-    glow.BackgroundTransparency=0.9; glow.BorderSizePixel=0; glow.ZIndex=0; glow.Parent=main; corner(glow,16)
-    grad(glow,Theme.accent,Theme.accent2,45)
-
-    local header = Instance.new("Frame"); header.Size=UDim2.new(1,0,0,40); header.BackgroundTransparency=1; header.Parent=main
-    local logo = Instance.new("Frame"); logo.Size=UDim2.fromOffset(24,24); logo.Position=UDim2.fromOffset(12,8)
-    logo.BackgroundColor3=Theme.accent; logo.Parent=header; corner(logo,7); grad(logo,Theme.accent,Theme.accent2,45)
-    local logoLbl = Instance.new("TextLabel"); logoLbl.BackgroundTransparency=1; logoLbl.Size=UDim2.fromScale(1,1)
-    logoLbl.Font=Enum.Font.GothamBlack; logoLbl.TextSize=14; logoLbl.TextColor3=Color3.fromRGB(255,255,255)
-    logoLbl.Text="S"; logoLbl.Parent=logo
-
-    local titleLbl = Instance.new("TextLabel"); titleLbl.BackgroundTransparency=1; titleLbl.Position=UDim2.fromOffset(44,6)
-    titleLbl.Size=UDim2.new(1,-160,0,20); titleLbl.TextXAlignment=Enum.TextXAlignment.Left
-    titleLbl.Font=Enum.Font.GothamBold; titleLbl.TextSize=16; titleLbl.TextColor3=Theme.text; titleLbl.Parent=header
-    grad(titleLbl,Color3.fromRGB(255,255,255),Theme.accent,0); loc(titleLbl,"title")
-
-    local subLbl = Instance.new("TextLabel"); subLbl.BackgroundTransparency=1; subLbl.Position=UDim2.fromOffset(44,22)
-    subLbl.Size=UDim2.new(1,-160,0,14); subLbl.TextXAlignment=Enum.TextXAlignment.Left
-    subLbl.Font=Enum.Font.Gotham; subLbl.TextSize=10; subLbl.TextColor3=Theme.dim; subLbl.Parent=header
-    loc(subLbl,"subtitle")
-
-    local close = Instance.new("TextButton"); close.Size=UDim2.fromOffset(20,20); close.Position=UDim2.new(1,-30,0,10)
-    close.BackgroundColor3=Theme.card; close.Text="×"; close.Font=Enum.Font.GothamBold; close.TextSize=15
-    close.TextColor3=Theme.text; close.Parent=header; corner(close,7)
-    close.MouseButton1Click:Connect(function() GUI.Enabled=false end)
-    close.MouseEnter:Connect(function() tween(close,0.12,{BackgroundColor3=Theme.accent}) end)
-    close.MouseLeave:Connect(function() tween(close,0.12,{BackgroundColor3=Theme.card}) end)
-
-    local sidebar = Instance.new("Frame"); sidebar.Size=UDim2.new(0,122,1,-52); sidebar.Position=UDim2.fromOffset(10,46)
-    sidebar.BackgroundColor3=Theme.panel; sidebar.BackgroundTransparency=0.2; sidebar.Parent=main; corner(sidebar,10)
-    local sidebarList=Instance.new("UIListLayout"); sidebarList.Padding=UDim.new(0,4); sidebarList.Parent=sidebar
-    local sidebarPad=Instance.new("UIPadding"); sidebarPad.PaddingTop=UDim.new(0,6); sidebarPad.PaddingLeft=UDim.new(0,6)
-    sidebarPad.PaddingRight=UDim.new(0,6); sidebarPad.Parent=sidebar
-
-    local content = Instance.new("ScrollingFrame")
-    content.Size=UDim2.new(1,-150,1,-56); content.Position=UDim2.fromOffset(140,46)
-    content.BackgroundTransparency=1; content.BorderSizePixel=0; content.ScrollBarThickness=2
-    content.ScrollBarImageColor3=Theme.accent; content.CanvasSize=UDim2.new()
-    content.AutomaticCanvasSize=Enum.AutomaticSize.Y; content.Parent=main
-    local contentList=Instance.new("UIListLayout"); contentList.Padding=UDim.new(0,6); contentList.Parent=content
-    local contentPad=Instance.new("UIPadding"); contentPad.PaddingTop=UDim.new(0,4); contentPad.PaddingRight=UDim.new(0,8); contentPad.Parent=content
-
-    self.gui=main; self.sidebar=sidebar; self.content=content; self.header=header
-
-    local dragging, ds, sp
-    header.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=true; ds=i.Position; sp=main.Position end end)
-    header.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
-    UIS.InputChanged:Connect(function(i) if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local d=i.Position-ds; main.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end)
-
-    main.Size=UDim2.fromOffset(540*0.9,380*0.9); main.BackgroundTransparency=1
-    tween(main,0.24,{Size=UDim2.fromOffset(540,380),BackgroundTransparency=0.05})
-    return self
+local function resolveKey(move)
+    local last = move:match("([ZXCVF])$")
+    if last then return last:lower() end
+    local first = move:match("^([ZXCVF])")
+    if first then return first:lower() end
+    if #move == 1 then return move:lower() end
+    return nil
 end
 
-function Window:Tab(nameKey)
-    local tab={nameKey=nameKey, window=self}
-    local btn=Instance.new("TextButton"); btn.Size=UDim2.new(1,0,0,32); btn.BackgroundColor3=Theme.card
-    btn.BackgroundTransparency=1; btn.TextXAlignment=Enum.TextXAlignment.Left; btn.Font=Enum.Font.GothamMedium
-    btn.TextSize=13; btn.TextColor3=Theme.dim; btn.Parent=self.sidebar; corner(btn,7); loc(btn,nameKey)
-    local page=Instance.new("Frame"); page.Size=UDim2.new(1,0,0,0); page.AutomaticSize=Enum.AutomaticSize.Y
-    page.BackgroundTransparency=1; page.Visible=false; page.Parent=self.content
-    local pageList=Instance.new("UIListLayout"); pageList.Padding=UDim.new(0,6); pageList.Parent=page
-    tab.button=btn; tab.page=page
-    btn.MouseButton1Click:Connect(function() self:SelectTab(tab) end)
-    table.insert(self.tabs,tab); if not self.activeTab then self:SelectTab(tab) end
-    return tab
-end
-
-function Window:SelectTab(tab)
-    for _,t in ipairs(self.tabs) do
-        local on=(t==tab); t.page.Visible=on
-        tween(t.button,0.15,{BackgroundTransparency=on and 0.7 or 1, TextColor3=on and Theme.text or Theme.dim})
+local function doMove(move, delay)
+    if move == "look_down" then
+        Camera.CFrame = Camera.CFrame * CFrame.Angles(math.rad(45),0,0)
+    elseif move == "look_back" then
+        Camera.CFrame = Camera.CFrame * CFrame.Angles(0,math.rad(180),0)
+    elseif move == "dash" or move == "Soru" or move == "FlashStep" then
+        local dk = getgenv().SyntaxDashKey
+        if dk and dk ~= "" then press(dk); task.wait(0.05); release(dk) end
+    elseif move:find("_hold") then
+        local key = resolveKey(move:gsub("_hold",""))
+        if key then press(key); task.wait(0.45); release(key) end
+    elseif move:find("M1x") then
+        local count = tonumber(move:match("M1x(%d+)")) or 1
+        for _=1,count do click(); task.wait(0.09) end
+    elseif move == "M1" or move == "M1_spam" then
+        local count = (move=="M1_spam") and 5 or 1
+        for _=1,count do click(); task.wait(0.09) end
+    else
+        local key = resolveKey(move)
+        if key then press(key); task.wait(delay or 0.15); release(key) end
     end
-    self.activeTab=tab
+    task.wait(delay or 0.15)
 end
 
-local function makeRow(page,h)
-    local row=Instance.new("Frame"); row.Size=UDim2.new(1,0,0,h or 34); row.BackgroundColor3=Theme.card
-    row.BackgroundTransparency=0.25; row.BorderSizePixel=0; row.Parent=page; corner(row,8); return row
-end
-
-function Window:Toggle(tab, textKey, default, callback)
-    local row=makeRow(tab.page,34)
-    local lbl=Instance.new("TextLabel"); lbl.BackgroundTransparency=1; lbl.Position=UDim2.fromOffset(12,0)
-    lbl.Size=UDim2.new(1,-70,1,0); lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.Gotham
-    lbl.TextSize=13; lbl.TextColor3=Theme.text; lbl.Parent=row; loc(lbl,textKey)
-    local state=default or false; Flags[textKey]=state
-    local track=Instance.new("Frame"); track.Size=UDim2.fromOffset(40,20); track.Position=UDim2.new(1,-52,0.5,-10)
-    track.BackgroundColor3=state and Theme.accent or Theme.off; track.Parent=row; corner(track,10)
-    local knob=Instance.new("Frame"); knob.Size=UDim2.fromOffset(16,16)
-    knob.Position=state and UDim2.fromOffset(22,2) or UDim2.fromOffset(2,2)
-    knob.BackgroundColor3=Color3.fromRGB(255,255,255); knob.Parent=track; corner(knob,8)
-    local function set(v) state=v; Flags[textKey]=v
-        tween(track,0.15,{BackgroundColor3=v and Theme.accent or Theme.off})
-        tween(knob,0.15,{Position=v and UDim2.fromOffset(22,2) or UDim2.fromOffset(2,2)})
-        if callback then callback(v) end end
-    row.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(not state) end end)
-    return {Set=set,Get=function() return state end}
-end
-
-function Window:Button(tab, textKey, callback)
-    local row=makeRow(tab.page,32)
-    local btn=Instance.new("TextButton"); btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1
-    btn.Font=Enum.Font.GothamMedium; btn.TextSize=13; btn.TextColor3=Theme.text; btn.Parent=row; loc(btn,textKey)
-    btn.MouseEnter:Connect(function() tween(row,0.12,{BackgroundColor3=Theme.accent,BackgroundTransparency=0.25}) end)
-    btn.MouseLeave:Connect(function() tween(row,0.12,{BackgroundColor3=Theme.card,BackgroundTransparency=0.25}) end)
-    btn.MouseButton1Click:Connect(function() if callback then callback() end end)
-    return btn
-end
-
-function Window:Slider(tab, textKey, min, max, default, callback)
-    min,max=min or 0,max or 100
-    local row=makeRow(tab.page,44)
-    local lbl=Instance.new("TextLabel"); lbl.BackgroundTransparency=1; lbl.Position=UDim2.fromOffset(12,0)
-    lbl.Size=UDim2.new(1,-70,0,22); lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.Gotham
-    lbl.TextSize=13; lbl.TextColor3=Theme.text; lbl.Parent=row; loc(lbl,textKey)
-    local val=default or min; Flags[textKey]=val
-    local valLbl=Instance.new("TextLabel"); valLbl.BackgroundTransparency=1; valLbl.Position=UDim2.new(1,-60,0,0)
-    valLbl.Size=UDim2.fromOffset(48,22); valLbl.TextXAlignment=Enum.TextXAlignment.Right
-    valLbl.Font=Enum.Font.GothamBold; valLbl.TextSize=12; valLbl.TextColor3=Theme.accent
-    valLbl.Text=tostring(val); valLbl.Parent=row
-    local bar=Instance.new("Frame"); bar.Size=UDim2.new(1,-24,0,6); bar.Position=UDim2.fromOffset(12,28)
-    bar.BackgroundColor3=Theme.off; bar.Parent=row; corner(bar,3)
-    local fill=Instance.new("Frame"); fill.Size=UDim2.new((val-min)/(max-min),0,1,0)
-    fill.BackgroundColor3=Theme.accent; fill.Parent=bar; corner(fill,3); grad(fill,Theme.accent,Theme.accent2,0)
-    local dragging=false
-    local function apply(i)
-        local rel=math.clamp((i.Position.X-bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1)
-        val=math.floor(min+(max-min)*rel+0.5); Flags[textKey]=val
-        valLbl.Text=tostring(val); fill.Size=UDim2.new(rel,0,1,0)
-        if callback then callback(val) end
+local function ExecuteCombo(fruit, index, delay)
+    if not Combos[fruit] or not Combos[fruit][index] then return end
+    local combo = Combos[fruit][index]
+    delay = delay or 0.15
+    for _, move in ipairs(combo.moves) do
+        doMove(move, delay)
     end
-    bar.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=true; apply(i) end end)
-    UIS.InputChanged:Connect(function(i) if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then apply(i) end end)
-    UIS.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
-    return {Set=function(v) val=v; Flags[textKey]=v; valLbl.Text=tostring(v); fill.Size=UDim2.new((v-min)/(max-min),0,1,0) end, Get=function() return val end}
 end
-
-function Window:Textbox(tab, textKey, default, callback)
-    local row=makeRow(tab.page,36)
-    local lbl=Instance.new("TextLabel"); lbl.BackgroundTransparency=1; lbl.Position=UDim2.fromOffset(12,0)
-    lbl.Size=UDim2.new(0.45,0,1,0); lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.Gotham
-    lbl.TextSize=13; lbl.TextColor3=Theme.text; lbl.Parent=row; loc(lbl,textKey)
-    local box=Instance.new("TextBox"); box.Size=UDim2.new(0.5,-12,0,22); box.Position=UDim2.new(0.5,0,0.5,-11)
-    box.BackgroundColor3=Theme.panel; box.Text=default or ""; box.PlaceholderText="..."
-    box.Font=Enum.Font.Gotham; box.TextSize=12; box.TextColor3=Theme.text; box.PlaceholderColor3=Theme.dim
-    box.ClearTextOnFocus=false; box.Parent=row; corner(box,6)
-    box.FocusLost:Connect(function() Flags[textKey]=box.Text; if callback then callback(box.Text) end end)
-    Flags[textKey]=default
-    return box
-end
-
-function Window:Keybind(tab, textKey, default, callback)
-    local row=makeRow(tab.page,34)
-    local lbl=Instance.new("TextLabel"); lbl.BackgroundTransparency=1; lbl.Position=UDim2.fromOffset(12,0)
-    lbl.Size=UDim2.new(1,-120,1,0); lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.Gotham
-    lbl.TextSize=13; lbl.TextColor3=Theme.text; lbl.Parent=row; loc(lbl,textKey)
-    local kb=Instance.new("TextButton"); kb.Size=UDim2.fromOffset(92,22); kb.Position=UDim2.new(1,-104,0.5,-11)
-    kb.BackgroundColor3=Theme.panel; kb.Font=Enum.Font.GothamMedium; kb.TextSize=12
-    kb.TextColor3=Theme.text; kb.Parent=row; corner(kb,6)
-    Flags[textKey]=default; kb.Text=default and default.Name or "None"
-    local listening=false
-    kb.MouseButton1Click:Connect(function() listening=true; kb.Text="..." end)
-    UIS.InputBegan:Connect(function(i,gp)
-        if listening and not gp and i.UserInputType==Enum.UserInputType.Keyboard then
-            listening=false; Flags[textKey]=i.KeyCode; kb.Text=i.KeyCode.Name
-            if callback then callback(i.KeyCode) end
-        end
-    end)
-    return kb
-end
-
-function Window:Mode(tab, textKey, options, defaultIndex, callback)
-    local row=makeRow(tab.page,34)
-    local lbl=Instance.new("TextLabel"); lbl.BackgroundTransparency=1; lbl.Position=UDim2.fromOffset(12,0)
-    lbl.Size=UDim2.new(1,-120,1,0); lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.Gotham
-    lbl.TextSize=13; lbl.TextColor3=Theme.text; lbl.Parent=row; loc(lbl,textKey)
-    local idx=defaultIndex or 1
-    local val=Instance.new("TextButton"); val.Size=UDim2.fromOffset(92,22); val.Position=UDim2.new(1,-104,0.5,-11)
-    val.BackgroundColor3=Theme.panel; val.Font=Enum.Font.GothamMedium; val.TextSize=12
-    val.TextColor3=Theme.accent; val.Text=options[idx]; val.Parent=row; corner(val,6)
-    val.MouseButton1Click:Connect(function()
-        idx = idx % #options + 1
-        val.Text = options[idx]
-        if callback then callback(options[idx], idx) end
-    end)
-    return {Get=function() return options[idx] end}
-end
+getgenv().SyntaxExecuteCombo = ExecuteCombo
 
 --==================================================================
--- MOBILE BUTTON
+-- AUTO COMBO
 --==================================================================
-if UIS.TouchEnabled then
-    local btn=Instance.new("TextButton"); btn.Name="SyntaxMobileBtn"; btn.Size=UDim2.fromOffset(54,54)
-    btn.Position=UDim2.new(0,20,0.5,-27); btn.BackgroundColor3=Theme.accent; btn.Text="S"
-    btn.Font=Enum.Font.GothamBlack; btn.TextSize=22; btn.TextColor3=Color3.fromRGB(255,255,255)
-    btn.Parent=MobileGui; corner(btn,27); stroke(btn,Color3.fromRGB(255,255,255),1.5,0.5)
-    grad(btn,Theme.accent,Theme.accent2,45)
-    if getgenv().SyntaxLogoId and getgenv().SyntaxLogoId ~= "" then
-        local img=Instance.new("ImageLabel"); img.Size=UDim2.fromScale(1,1); img.BackgroundTransparency=1
-        img.Image=getgenv().SyntaxLogoId; img.Parent=btn; corner(img,27); btn.Text=""
-    end
-    local drag,ds,sp=false,nil,nil
-    btn.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.Touch then drag=true; ds=i.Position; sp=btn.Position end end)
-    btn.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.Touch then
-        if (i.Position-ds).Magnitude<10 then GUI.Enabled=not GUI.Enabled end; drag=false end end)
-    UIS.InputChanged:Connect(function(i) if drag and i.UserInputType==Enum.UserInputType.Touch then
-        local d=i.Position-ds; btn.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end)
-end
-
---==================================================================
--- MENU KEY
---==================================================================
-Flags["menu_key"] = Flags["menu_key"] or Enum.KeyCode.RightShift
-UIS.InputBegan:Connect(function(i,gp)
-    if gp then return end
-    if i.KeyCode == Flags["menu_key"] then GUI.Enabled = not GUI.Enabled end
-end)
-
---==================================================================
--- BUILD UI
---==================================================================
-local win = Window.new(L("title"), L("subtitle"))
-local tabPvP    = win:Tab("tab_pvp")
-local tabVisual = win:Tab("tab_visual")
-local tabMisc   = win:Tab("tab_misc")
-
---==================================================================
--- UTILS
---==================================================================
-local function alive(p) return p and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health>0 end
-local function root(p) return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") end
-
---==================================================================
--- SMART AIMBOT
---==================================================================
-local function pickTarget(fov, maxRange)
-    local best, bestAng = nil, math.huge
-    local camPos = cam.CFrame.Position
-    local look = cam.CFrame.LookVector
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p ~= LP and alive(p) then
-            local hrp = root(p)
-            if hrp then
-                local dir = hrp.Position - camPos
-                local dist = dir.Magnitude
-                if dist > 0.1 and dist <= maxRange then
-                    local ang = math.deg(math.acos(math.clamp(look:Dot(dir.Unit),-1,1)))
-                    if ang <= fov and ang < bestAng then bestAng=ang; best=p end
-                end
+local comboRunning, comboCooldown = false, 0
+local function nearestEnemy(range)
+    local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return nil end
+    local best, bestD = nil, range
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP then
+            local c = p.Character
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            local root = c and c:FindFirstChild("HumanoidRootPart")
+            if hum and hum.Health>0 and root then
+                local d = (myRoot.Position - root.Position).Magnitude
+                if d < bestD then best, bestD = p, d end
             end
         end
     end
     return best
 end
-
-RunService.RenderStepped:Connect(function(dt)
-    if not Flags["aimbot"] then return end
-    local key = Flags["aim_key"] or Enum.KeyCode.E
-    if not UIS:IsKeyDown(key) then return end
-    local fov = Flags["aim_fov"] or 25
-    local range = Flags["aim_range"] or 60
-    local t = pickTarget(fov, range)
-    if not t then return end
-    local hrp = root(t); if not hrp then return end
-    local aimPos = hrp.Position
-    if Flags["aim_predict"] then aimPos = aimPos + hrp.AssemblyLinearVelocity * 0.12 end
-    local alpha = math.clamp((Flags["aim_smooth"] or 12) / 100, 0.05, 0.9)
-    cam.CFrame = cam.CFrame:Lerp(CFrame.lookAt(cam.CFrame.Position, aimPos), alpha)
-end)
-
---==================================================================
--- ESP
---==================================================================
-local function updateESP()
-    local on = Flags["esp"]
-    local showNames = Flags["esp_names"]
-    local showDist = Flags["esp_distance"]
-    for _,p in ipairs(Players:GetPlayers()) do
-        local c = p.Character
-        if p ~= LP and c and alive(p) then
-            if on then
-                local h = c:FindFirstChild("SyntaxESP")
-                if not h then h=Instance.new("Highlight"); h.Name="SyntaxESP"; h.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop; h.Parent=c end
-                h.FillColor=Theme.accent; h.OutlineColor=Color3.fromRGB(255,255,255)
-                h.FillTransparency=0.65; h.OutlineTransparency=0
-                local tag=c:FindFirstChild("SyntaxName")
-                if not tag then
-                    tag=Instance.new("BillboardGui"); tag.Name="SyntaxName"; tag.Size=UDim2.fromOffset(140,20)
-                    tag.StudsOffset=Vector3.new(0,3,0); tag.AlwaysOnTop=true; tag.Parent=c
-                    local txt=Instance.new("TextLabel"); txt.Name="Label"; txt.Size=UDim2.fromScale(1,1)
-                    txt.BackgroundTransparency=1; txt.Font=Enum.Font.GothamBold; txt.TextSize=12
-                    txt.TextColor3=Color3.fromRGB(255,255,255); txt.TextStrokeTransparency=0.4; txt.Parent=tag
-                end
-                local lbl=tag:FindFirstChild("Label")
-                if lbl then
-                    if showNames or showDist then
-                        local txt=p.Name
-                        if showDist and root(LP) and root(p) then txt = txt .. " [" .. math.floor((root(LP).Position - root(p).Position).Magnitude) .. "m]" end
-                        lbl.Text=txt; tag.Enabled=true
-                    else tag.Enabled=false end
-                end
-            else
-                local h=c:FindFirstChild("SyntaxESP"); if h then h:Destroy() end
-                local n2=c:FindFirstChild("SyntaxName"); if n2 then n2:Destroy() end
-            end
-        end
-    end
-end
-RunService.Heartbeat:Connect(updateESP)
-
---==================================================================
--- AUTOPARRY
---==================================================================
-local lastHealth=nil
-RunService.Heartbeat:Connect(function()
-    if not Flags["autoparry"] then lastHealth=nil; return end
-    local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    if lastHealth and hum.Health<lastHealth then
-        pcall(function() keypress("q"); task.wait(0.05); keyrelease("q") end)
-    end
-    lastHealth=hum.Health
-end)
-
---==================================================================
--- COMBO LIBRARY (Fruits)
---==================================================================
-local ToolSlots = {
-    -- ["Kitsune"]=1, ["Godhuman"]=2, ["CDK"]=3, ...
-}
-
-local Raw = {
-    -- ==== Light ====
-    {name="Light · Godhuman+Kabucha", cat="Light", diff="Easy", target="All", icon="",
-     combo="Light V -> Light C -> Kabucha X -> Godhuman Z -> Godhuman X -> Light Z"},
-    {name="Light · Trident+Sanguine", cat="Light", diff="Medium", target="All", icon="",
-     combo="Light V -> Light C -> Spikey Trident X -> Sanguine Art Z -> Sanguine Art X -> Sanguine Art C -> Light Z"},
-    {name="Light · DeathStep+Acidum", cat="Light", diff="Hard", target="Combo", icon="",
-     combo="Acidum Rifle X -> Acidum Rifle Z -> Death Step X -> Death Step C (hold) -> Light X -> Light V -> Light Z -> Gravity Cane X -> Light C"},
-    {name="Light · Yama+Eclaw", cat="Light", diff="Medium", target="All", icon="",
-     combo="E-Claw C -> Yama X -> Light V -> Light X (hold) -> Light C -> Light Z"},
-    -- ==== Yeti ====
-    {name="Yeti · Trident+GH", cat="Yeti", diff="Medium", target="Tanks", icon="",
-     combo="Yeti C -> Spikey Trident X -> Godhuman X -> Godhuman Z -> Godhuman C -> Yeti F -> Spikey Trident Z -> Yeti X -> Yeti Z"},
-    {name="Yeti · Trident+GH (alt)", cat="Yeti", diff="Medium", target="Tanks", icon="",
-     combo="Yeti C -> Spikey Trident X -> Godhuman X -> Godhuman Z -> Godhuman C -> Yeti F -> Yeti Z -> Yeti X"},
-    {name="Yeti · pure", cat="Yeti", diff="Easy", target="Transform", icon="",
-     combo="Yeti C -> Yeti F -> Yeti X -> Yeti Z -> M1"},
-    {name="Yeti · Grav+Sanguine", cat="Yeti", diff="Medium", target="Lifesteal", icon="",
-     combo="Gravity Blade Z -> Sanguine Art Z -> Sanguine Art C -> Yeti F -> Gravity Blade X -> Sanguine Art X"},
-    -- ==== Dough ====
-    {name="Dough · mini-spam", cat="Dough", diff="Very Easy", target="Mash", icon="",
-     combo="Dough X -> Dough Z"},
-    {name="Dough · full", cat="Dough", diff="Easy", target="Instinct", icon="",
-     combo="Dough V -> Dough X -> Dough C -> Look down -> Godhuman Z -> Godhuman C -> Godhuman X"},
-    {name="Dough · CDK", cat="Dough", diff="Medium", target="Stun", icon="",
-     combo="Dough X -> Dough V -> Dough C -> Godhuman Z -> Anchor Z -> Godhuman C -> Dough Z"},
-    {name="Dough · advanced", cat="Dough", diff="Hard", target="Hitbox", icon="",
-     combo="Dough X -> Dough C -> CDK Z -> Kabucha X -> Dough V -> Dough X -> Godhuman C (hold) -> CDK X -> Godhuman Z -> Godhuman X"},
-    -- ==== Spider ====
-    {name="Spider · Moonxyy", cat="Spider", diff="Easy", target="All", icon="",
-     combo="Spider X -> Gravity Cane Z -> Spider Z -> Godhuman Z -> Godhuman X -> Godhuman C -> Spider V -> Spider C"},
-    {name="Spider · Dark Blade", cat="Spider", diff="Medium", target="Aim", icon="",
-     combo="Spider X -> Dark Blade Z -> Eclaw Z -> Eclaw C -> Dark Blade X -> Soul Guitar Z -> Spider V -> Spider Z"},
-    {name="Spider · Sanguine", cat="Spider", diff="Medium", target="Style", icon="",
-     combo="Spider X -> Spider Z (hold) -> Sanguine Art X -> Gravity Cane Z -> Spider V -> Sanguine Art C"},
-    {name="Spider · Gravity Cane", cat="Spider", diff="Medium", target="Talon", icon="",
-     combo="Gravity Cane X -> Spider V -> Spider X -> Kabucha X -> Spider C -> Gravity Cane Z -> Dragon Talon Z -> Spider Z"},
-    -- ==== Leopard / Tiger ====
-    {name="Leopard · simple", cat="Leopard", diff="Easy", target="All", icon="",
-     combo="Leopard C -> M1 x3 -> Leopard Z"},
-    {name="Leopard · pure", cat="Leopard", diff="Easy", target="No weapon", icon="",
-     combo="Leopard M1 -> Leopard Z -> Leopard F -> Leopard X -> Leopard C"},
-    {name="Leopard · GH+Kabucha", cat="Leopard", diff="Medium", target="Extend", icon="",
-     combo="Leopard C -> Godhuman Z -> Kabucha X -> Leopard Z -> Leopard X"},
-    {name="Tiger · advanced", cat="Leopard", diff="Hard", target="Infinite", icon="",
-     combo="Tiger Z -> Tiger X -> Godhuman Z -> Tiger V -> Godhuman C -> M1 spam"},
-    -- ==== Kitsune ====
-    {name="Kitsune · Gravity Blade", cat="Kitsune", diff="Hard", target="Experienced", icon="",
-     combo="Gravity Blade Z -> Superhuman Z -> Venom Bow Z/X -> Dash -> Superhuman X -> Kitsune C -> Gravity Blade X -> Superhuman C"},
-    {name="Kitsune · Sanguine+Yama", cat="Kitsune", diff="Hard", target="Ghoul", icon="",
-     combo="Sanguine C -> Yama X -> Look back -> Kitsune C -> Kitsune X -> Sanguine Z -> Kitsune F -> Kitsune Z"},
-    {name="Kitsune · pure", cat="Kitsune", diff="Medium", target="Repeat C", icon="",
-     combo="Kitsune C -> Kitsune X -> Kitsune Z -> Kitsune F -> Gravity Cane Z -> M1 x3"},
-    -- ==== Dragon ====
-    {name="Dragon · Trident", cat="Dragon", diff="Medium", target="AoE", icon="",
-     combo="Dragon C -> Dragon Trident X -> Godhuman X -> Godhuman C -> Godhuman Z"},
-    {name="Dragon · Talon", cat="Dragon", diff="Medium", target="Stun", icon="",
-     combo="Dragon Talon Z -> Dragon C -> Dragon Talon X -> Dough V (hold) -> Dough X"},
-    {name="Dragon · Eclaw", cat="Dragon", diff="Hard", target="Camera", icon="",
-     combo="Dragon X -> Flash Step -> Eclaw Z -> Twin Hooks Z -> Dragon C -> Dragon Z -> Eclaw C"},
-    -- ==== Venom ====
-    {name="Venom · Gravity Blade", cat="Venom", diff="Medium", target="DoT", icon="",
-     combo="Venom C -> Venom X -> Gravity Blade Z -> Venom Z (hold) -> Gravity Blade X -> Venom Bow Z"},
-    {name="Venom · Yama+Sanguine", cat="Venom", diff="Hard", target="Tanks", icon="",
-     combo="Venom X -> Twin Hooks X -> Dragon Talon X (hold) -> Twin Hooks Z -> Venom Z (hold) -> Venom F -> Dragon Talon Z -> Dragon Talon C"},
-    {name="Venom · Gravity+GH", cat="Venom", diff="Medium", target="All", icon="",
-     combo="Venom C -> Godhuman C -> Gravity X -> Gravity Z -> Godhuman Z -> Venom X -> Venom Z (hold)"},
-    {name="Venom · CDK", cat="Venom", diff="Medium", target="Instinct", icon="",
-     combo="Venom X -> Venom Z -> CDK X -> Godhuman Z -> Godhuman C -> Venom C"},
-    -- ==== Shadow ====
-    {name="Shadow · Talon+Cane", cat="Shadow", diff="Medium", target="Control", icon="",
-     combo="Shadow Z -> Gravity Cane Z -> Dragon Talon Z -> Shadow V -> Shadow X -> Dragon Talon C -> Dragon Talon X"},
-    {name="Shadow · Godhuman+Trident", cat="Shadow", diff="Medium", target="All", icon="",
-     combo="Godhuman C -> Spikey Trident X -> Shadow X -> Shadow Z -> Godhuman X -> Godhuman Z -> Shadow C"},
-    {name="Shadow · Godhuman", cat="Shadow", diff="Medium", target="All", icon="",
-     combo="Dark C -> Dark X -> Dark V -> Godhuman Z -> Godhuman X -> Godhuman C"},
-    -- ==== Control ====
-    {name="Control · GH+SkullGuitar", cat="Control", diff="Medium", target="Starter", icon="",
-     combo="Control C -> Godhuman X -> Godhuman Z -> Godhuman C -> Control X -> Skull Guitar Z -> Control F"},
-    {name="Control · Midnight+Sanguine", cat="Control", diff="Medium", target="All", icon="",
-     combo="Control C -> Midnight Blade Z -> Sanguine Art C -> Sanguine Art Z -> Control X -> Control F"},
-    {name="Control · Daggers", cat="Control", diff="Medium", target="All", icon="",
-     combo="Control X -> Control C -> Sword M1 x2 -> Godhuman Z -> Godhuman X -> Control V"},
-    -- ==== Ice ====
-    {name="Ice · newbie", cat="Ice", diff="Easy+", target="32k", icon="",
-     combo="Ice V -> Ice C -> Ice Z -> CDK Z -> CDK X -> Look back -> Sanguine Art C -> Sanguine Art Z -> Sanguine Art X"},
-    {name="Ice · Godhuman", cat="Ice", diff="Easy+", target="Newbie", icon="",
-     combo="Ice V -> Ice C -> Godhuman M1 x2 -> Ice Z -> Godhuman Z -> Godhuman C -> Spikey Trident X -> Godhuman X -> Ice X"},
-    -- ==== Rumble ====
-    {name="Rumble · Godhuman", cat="Rumble", diff="Medium", target="All", icon="",
-     combo="Rumble C -> Rumble X -> Godhuman Z -> Godhuman C -> Sword M1 x2 -> Rumble V"},
-    {name="Rumble · sword", cat="Rumble", diff="Medium", target="Sword", icon="",
-     combo="Rumble X -> Sword M1 x3 -> Rumble C -> Godhuman Z -> Rumble V"},
-    -- ==== Dark ====
-    {name="Dark · Godhuman", cat="Dark", diff="Medium", target="All", icon="",
-     combo="Dark C -> Dark X -> Dark V -> Godhuman Z -> Godhuman X -> Godhuman C"},
-    {name="Dark · Chop", cat="Dark", diff="Easy", target="Teleport", icon="",
-     combo="Dark Step V -> Chop Z -> Chop C -> Chop X -> Dark Step X -> Dark Step C -> Dark Step Z"},
-    -- ==== Gravity ====
-    {name="Gravity · Dough", cat="Gravity", diff="Medium", target="Starter", icon="",
-     combo="Gravity X -> Dough C -> Dough X -> Dough V -> CDK Z -> CDK X -> Godhuman Z -> Godhuman C"},
-    {name="Gravity · Godhuman", cat="Gravity", diff="Medium", target="Kabucha", icon="",
-     combo="Gravity X -> Gravity V -> Godhuman Z -> Godhuman C -> CDK X -> Gravity Z -> Godhuman X -> Gravity C"},
-    -- ==== Portal ====
-    {name="Portal · Canvander", cat="Portal", diff="Medium", target="23k", icon="",
-     combo="Portal Z -> Canvander X -> Godhuman Z -> Godhuman C -> Portal V"},
-    {name="Portal · TTK", cat="Portal", diff="Medium", target="Stun", icon="",
-     combo="Portal Z -> TTK X -> Sanguine Art X -> Sanguine Art C -> Sanguine Art Z -> TTK Z"},
-    -- ==== Gas ====
-    {name="Gas · Godhuman", cat="Gas", diff="Medium", target="Clouds", icon="",
-     combo="Gas X -> Gas C -> Godhuman Z -> Godhuman X -> Gas V"},
-    {name="Gas · Godhuman Z-start", cat="Gas", diff="Medium", target="Meta", icon="",
-     combo="Godhuman C -> Gas Z -> Gas X -> Gas C -> Godhuman Z -> Gas F"},
-    {name="Gas · Sanguine", cat="Gas", diff="Medium", target="All", icon="",
-     combo="Gas X -> Gas C -> Godhuman Z -> Sanguine Art Z -> Gas V"},
-    {name="Gas · Shark Anchor", cat="Gas", diff="Medium", target="Stun", icon="",
-     combo="Gas X -> Shark Anchor Z -> Gas C -> Godhuman Z -> Gas V"},
-    -- ==== Spirit ====
-    {name="Spirit · Godhuman", cat="Spirit", diff="Very Hard", target="Pro", icon="",
-     combo="Spirit C -> Spirit X -> Spirit V -> Godhuman Z -> Godhuman C"},
-    {name="Spirit · SoulCane+Acidum", cat="Spirit", diff="Hard", target="Pro", icon="",
-     combo="Spirit C -> Soul Cane Z -> Acidum Rifle X -> Godhuman Z -> Godhuman C -> Spirit V"},
-    {name="Spirit · Grav+SoulGuitar", cat="Spirit", diff="Very Hard", target="Pro", icon="",
-     combo="Gravity Blade Z -> Godhuman X -> Godhuman Z -> Spirit X -> Spirit Z -> Spirit V (hold) -> Soul Guitar Z -> Spirit C -> Godhuman C (hold)"},
-    {name="Spirit · Sanguine", cat="Spirit", diff="Hard", target="Soul", icon="",
-     combo="Spirit C -> Sanguine Art Z -> Spirit X -> Sanguine Art C -> Spirit V"},
-    -- ==== Mammoth ====
-    {name="Mammoth · Godhuman", cat="Mammoth", diff="Medium", target="Tanks", icon="",
-     combo="Mammoth Z -> Mammoth X -> Mammoth C -> Godhuman Z -> Godhuman X"},
-    {name="Mammoth · GH+Trident", cat="Mammoth", diff="Medium", target="Tanks", icon="",
-     combo="Godhuman C -> Godhuman Z -> Mammoth C -> Godhuman X -> Mammoth Z -> Mammoth X"},
-    {name="Mammoth · transform", cat="Mammoth", diff="Easy", target="Tanks", icon="",
-     combo="Mammoth X -> Mammoth Z -> Mammoth F -> Mammoth C"},
-    {name="Mammoth · no trans", cat="Mammoth", diff="Easy", target="Newbie", icon="",
-     combo="Mammoth X -> Mammoth C -> Godhuman Z -> Mammoth Z"},
-    -- ==== Diamond / Quake / Chop / T-Rex / Buddha ====
-    {name="Diamond · simple", cat="Diamond", diff="Easy", target="Learning", icon="",
-     combo="Diamond Z -> Diamond X -> Diamond C -> Superhuman Z -> Superhuman C"},
-    {name="Quake · Godhuman", cat="Quake", diff="Medium", target="AoE", icon="",
-     combo="Quake X -> Quake C -> Quake V -> Godhuman Z -> Godhuman X"},
-    {name="Chop · Acidum", cat="Chop", diff="Medium", target="Fruit main", icon="",
-     combo="Acidum Rifle Z -> Soru -> Chop X (hold) -> Godhuman Z -> Godhuman C -> CDK X -> Chop C (hold) -> Godhuman X"},
-    {name="T-Rex · CDK", cat="T-Rex", diff="Medium", target="Tanks", icon="",
-     combo="CDK X -> T-Rex X -> T-Rex C -> Godhuman Z -> Godhuman X -> Godhuman C"},
-    {name="Buddha · E-Claw", cat="Buddha", diff="Easy", target="Survive", icon="",
-     combo="Yama X -> Buddha X -> E-Claw X -> Soul Guitar Z -> Buddha V -> Buddha C"},
-}
-
-local function parseCombo(str)
-    str = str:gsub("→","|"):gsub("%->","|"):gsub("/","|")
-    local steps={}
-    for token in string.gmatch(str,"([^|]+)") do
-        token = token:match("^%s*(.-)%s*$")
-        if token~="" then
-            local step={label=token,delay=0.2,type="key"}
-            local lower=token:lower()
-            if token:find("M1") then
-                step.type="click"; step.count=tonumber(token:match("x%s*(%d+)")) or (lower:find("spam") and 5 or 1)
-            elseif lower:find("dash") then step.type="dash"
-            elseif lower:find("look") or lower:find("вниз") or lower:find("назад") or lower:find("смотреть") then step.type="look"
-            else
-                local key=nil
-                for k in token:gmatch("%f[%a]([ZXCVF])%f[%A]") do key=k end
-                if not key then key=token:match("([ZXCVF])$") end
-                if key then
-                    step.key=key
-                    step.tool=(token:match("^(.-)%s*[ZXCVF]$") or token):gsub("%s+$","")
-                    if step.tool=="" then step.tool=nil end
-                    step.hold = (lower:find("hold") ~= nil) or (lower:find("зажать") ~= nil)
-                else
-                    if token:match("^[ZXCVF]$") then step.key=token end
-                end
-            end
-            steps[#steps+1]=step
-        end
-    end
-    return steps
-end
-for _,c in ipairs(Raw) do c.steps=parseCombo(c.combo) end
-
-local running, currentSlot, runThread = false,nil,nil
-local function switchTo(tool)
-    if not tool or tool=="" then return end
-    local slot=ToolSlots[tool]
-    if slot and slot~=currentSlot then
-        pcall(function() keypress(tostring(slot)) end); task.wait(0.05)
-        pcall(function() keyrelease(tostring(slot)) end)
-        currentSlot=slot; task.wait(0.12)
-    end
-end
-local function execStep(step, mul)
-    if step.type=="key" and step.key then
-        switchTo(step.tool)
-        pcall(function() keypress(step.key:lower()) end)
-        task.wait(step.hold and 0.4 or 0.06)
-        pcall(function() keyrelease(step.key:lower()) end)
-    elseif step.type=="click" then
-        for _=1,(step.count or 1) do pcall(function() mouse1click() end); task.wait(0.08) end
-    elseif step.type=="dash" then
-        local k=Flags["dash_key"]; if k and k~="" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end
-    elseif step.type=="look" then
-        local k=Flags["look_key"]; if k and k~="" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end
-    end
-    task.wait((step.delay or 0.2)*(mul or 1))
-end
-local function runCombo(combo)
-    if runThread then task.cancel(runThread) end
-    running=true
-    runThread=task.spawn(function()
-        for _,step in ipairs(combo.steps) do
-            if not running then break end
-            execStep(step,(Flags["combo_speed"] or 10)/10)
-        end
-        running=false; runThread=nil
+RunService.Heartbeat:Connect(function(dt)
+    local st = getgenv().SyntaxComboState
+    if not st or not st.auto then comboRunning=false; return end
+    comboCooldown = math.max(0, comboCooldown-dt)
+    if comboRunning or comboCooldown>0 then return end
+    if not nearestEnemy(st.range or 15) then return end
+    comboRunning = true
+    task.spawn(function()
+        ExecuteCombo(st.fruit, st.index, st.delay)
+        comboRunning = false
+        comboCooldown = 0.5
     end)
+end)
+
+--==================================================================
+-- SCREEN GUI
+--==================================================================
+local ScreenGui = new("ScreenGui",{Name="SyntaxGUI",ResetOnSpawn=false,IgnoreGuiInset=true,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},guiParent())
+
+--==== Notify ====
+local NotifyHolder = new("Frame",{Name="NotifyHolder",Size=UDim2.fromOffset(280,400),Position=UDim2.new(1,-290,0,10),BackgroundTransparency=1,Parent=ScreenGui})
+new("UIListLayout",{Padding=UDim.new(0,8),SortOrder=Enum.SortOrder.LayoutOrder,Parent=NotifyHolder})
+local function Notify(title,text,kind)
+    local col=(kind=="error" and Colors.error) or (kind=="success" and Colors.success) or Colors.accent
+    local card=new("Frame",{Size=UDim2.fromOffset(280,54),BackgroundColor3=Colors.dark,BackgroundTransparency=0.1,BorderSizePixel=0,Parent=NotifyHolder})
+    corner(card,8); stroke(card,col,1,0.3)
+    new("Frame",{Size=UDim2.new(0,4,1,0),BackgroundColor3=col,BorderSizePixel=0,Parent=card})
+    new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-20,0,18),Font=Enum.Font.GothamBold,TextSize=13,TextColor3=Colors.text,TextXAlignment=Enum.TextXAlignment.Left,Text=title,Parent=card})
+    new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(12,24),Size=UDim2.new(1,-20,0,24),Font=Enum.Font.Gotham,TextSize=11,TextColor3=Colors.sub,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Text=text,Parent=card})
+    card.Position=UDim2.fromOffset(300,0); tw(card,0.25,{Position=UDim2.fromOffset(0,0)})
+    task.delay(3.5,function() tw(card,0.25,{Position=UDim2.fromOffset(300,0)}); task.wait(0.3); card:Destroy() end)
 end
-local function stopCombo() running=false; if runThread then task.cancel(runThread); runThread=nil end end
+getgenv().SyntaxNotify = Notify
 
---== Combo window ==--
-local SG=Instance.new("ScreenGui"); SG.Name="SyntaxCombos"; SG.ResetOnSpawn=false
-SG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; SG.Enabled=false; SG.Parent=guiParent
-local W=Instance.new("Frame"); W.Size=UDim2.fromOffset(660,420); W.Position=UDim2.new(0.5,-330,0.5,-210)
-W.BackgroundColor3=Theme.bg; W.BackgroundTransparency=0.05; W.BorderSizePixel=0; W.Parent=SG
-corner(W,12); stroke(W,Color3.fromRGB(255,255,255),1,0.88); grad(W,Theme.bg,Theme.bg2,90)
-local hdr=Instance.new("Frame"); hdr.Size=UDim2.new(1,0,0,40); hdr.BackgroundTransparency=1; hdr.Parent=W
-local hl=Instance.new("Frame"); hl.Size=UDim2.fromOffset(24,24); hl.Position=UDim2.fromOffset(12,8)
-hl.BackgroundColor3=Theme.accent; hl.Parent=hdr; corner(hl,7); grad(hl,Theme.accent,Theme.accent2,45)
-local hlt=Instance.new("TextLabel"); hlt.BackgroundTransparency=1; hlt.Size=UDim2.fromScale(1,1)
-hlt.Font=Enum.Font.GothamBlack; hlt.TextSize=13; hlt.TextColor3=Color3.fromRGB(255,255,255); hlt.Text="C"; hlt.Parent=hl
-local tl=Instance.new("TextLabel"); tl.BackgroundTransparency=1; tl.Position=UDim2.fromOffset(44,6); tl.Size=UDim2.new(1,-80,0,20)
-tl.TextXAlignment=Enum.TextXAlignment.Left; tl.Font=Enum.Font.GothamBold; tl.TextSize=15; tl.TextColor3=Theme.text
-tl.Parent=hdr; grad(tl,Color3.fromRGB(255,255,255),Theme.accent,0); loc(tl,"combo_title")
-local cl=Instance.new("TextButton"); cl.Size=UDim2.fromOffset(20,20); cl.Position=UDim2.new(1,-30,0,10)
-cl.BackgroundColor3=Theme.card; cl.Text="×"; cl.Font=Enum.Font.GothamBold; cl.TextSize=15; cl.TextColor3=Theme.text
-cl.Parent=hdr; corner(cl,7); cl.MouseButton1Click:Connect(function() SG.Enabled=false end)
-do
-    local drag,ds,sp
-    hdr.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=true; ds=i.Position; sp=W.Position end end)
-    hdr.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=false end end)
-    UIS.InputChanged:Connect(function(i) if drag and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local d=i.Position-ds; W.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end)
-end
-
-local cats=Instance.new("ScrollingFrame"); cats.Size=UDim2.new(0,130,1,-52); cats.Position=UDim2.fromOffset(10,46)
-cats.BackgroundColor3=Theme.panel; cats.BackgroundTransparency=0.2; cats.BorderSizePixel=0; cats.ScrollBarThickness=2
-cats.ScrollBarImageColor3=Theme.accent; cats.CanvasSize=UDim2.new(); cats.AutomaticCanvasSize=Enum.AutomaticSize.Y
-cats.Parent=W; corner(cats,10)
-local catList=Instance.new("UIListLayout"); catList.Padding=UDim.new(0,4); catList.Parent=cats
-local catPad=Instance.new("UIPadding"); catPad.PaddingTop=UDim.new(0,6); catPad.PaddingLeft=UDim.new(0,6); catPad.PaddingRight=UDim.new(0,6); catPad.Parent=cats
-
-local list=Instance.new("ScrollingFrame"); list.Size=UDim2.new(0,210,1,-52); list.Position=UDim2.fromOffset(150,46)
-list.BackgroundColor3=Theme.panel; list.BackgroundTransparency=0.2; list.BorderSizePixel=0; list.ScrollBarThickness=2
-list.ScrollBarImageColor3=Theme.accent; list.CanvasSize=UDim2.new(); list.AutomaticCanvasSize=Enum.AutomaticSize.Y
-list.Parent=W; corner(list,10)
-local listL=Instance.new("UIListLayout"); listL.Padding=UDim.new(0,5); listL.Parent=list
-local listPad=Instance.new("UIPadding"); listPad.PaddingTop=UDim.new(0,6); listPad.PaddingLeft=UDim.new(0,6); listPad.PaddingRight=UDim.new(0,6); listPad.Parent=list
-
-local detail=Instance.new("Frame"); detail.Size=UDim2.new(1,-380,1,-52); detail.Position=UDim2.fromOffset(370,46)
-detail.BackgroundColor3=Theme.panel; detail.BackgroundTransparency=0.2; detail.Parent=W; corner(detail,10)
-local dIcon=Instance.new("ImageLabel"); dIcon.Size=UDim2.fromOffset(64,64); dIcon.Position=UDim2.fromOffset(12,12)
-dIcon.BackgroundColor3=Theme.card; dIcon.Image=""; dIcon.Parent=detail; corner(dIcon,10)
-local dIconFallback=Instance.new("TextLabel"); dIconFallback.BackgroundTransparency=1; dIconFallback.Size=UDim2.fromScale(1,1)
-dIconFallback.Font=Enum.Font.GothamBlack; dIconFallback.TextSize=26; dIconFallback.TextColor3=Theme.accent
-dIconFallback.Text="?"; dIconFallback.Parent=dIcon
-local dName=Instance.new("TextLabel"); dName.BackgroundTransparency=1; dName.Position=UDim2.fromOffset(88,14)
-dName.Size=UDim2.new(1,-100,0,20); dName.TextXAlignment=Enum.TextXAlignment.Left; dName.Font=Enum.Font.GothamBold
-dName.TextSize=14; dName.TextColor3=Theme.text; dName.Text="—"; dName.Parent=detail
-local dMeta=Instance.new("TextLabel"); dMeta.BackgroundTransparency=1; dMeta.Position=UDim2.fromOffset(88,34)
-dMeta.Size=UDim2.new(1,-100,0,18); dMeta.TextXAlignment=Enum.TextXAlignment.Left; dMeta.Font=Enum.Font.Gotham
-dMeta.TextSize=11; dMeta.TextColor3=Theme.accent; dMeta.Text=""; dMeta.Parent=detail
-local dSteps=Instance.new("ScrollingFrame"); dSteps.BackgroundTransparency=1; dSteps.Position=UDim2.fromOffset(12,86)
-dSteps.Size=UDim2.new(1,-24,1,-170); dSteps.BorderSizePixel=0; dSteps.ScrollBarThickness=2
-dSteps.ScrollBarImageColor3=Theme.accent; dSteps.CanvasSize=UDim2.new(); dSteps.AutomaticCanvasSize=Enum.AutomaticSize.Y
-dSteps.Parent=detail
-local dStepsL=Instance.new("UIListLayout"); dStepsL.Padding=UDim.new(0,2); dStepsL.Parent=dSteps
-local runBtn=Instance.new("TextButton"); runBtn.Size=UDim2.new(1,-24,0,32); runBtn.Position=UDim2.new(0,12,1,-84)
-runBtn.BackgroundColor3=Theme.accent; runBtn.Font=Enum.Font.GothamBold; runBtn.TextSize=13
-runBtn.TextColor3=Color3.fromRGB(255,255,255); runBtn.Parent=detail; corner(runBtn,8); grad(runBtn,Theme.accent,Theme.accent2,0)
-loc(runBtn,"run")
-local stopBtn=Instance.new("TextButton"); stopBtn.Size=UDim2.new(1,-24,0,28); stopBtn.Position=UDim2.new(0,12,1,-48)
-stopBtn.BackgroundColor3=Theme.card; stopBtn.Font=Enum.Font.GothamMedium; stopBtn.TextSize=12
-stopBtn.TextColor3=Theme.text; stopBtn.Parent=detail; corner(stopBtn,8); loc(stopBtn,"stop")
-
-local selected=nil
-local function renderDetail(combo)
-    selected=combo
-    for _,ch in ipairs(dSteps:GetChildren()) do if ch:IsA("TextLabel") then ch:Destroy() end end
-    if not combo then dName.Text=L("none"); dMeta.Text=""; dIcon.Image=""; dIconFallback.Text="?"; return end
-    dName.Text=combo.name
-    dMeta.Text=string.format("%s · %s · %s",combo.cat,combo.diff,combo.target)
-    local icon=FruitIcons[combo.cat]
-    if icon and icon~="" then dIcon.Image=icon; dIconFallback.Visible=false
-    else dIcon.Image=""; dIconFallback.Visible=true; dIconFallback.Text=string.sub(combo.cat,1,1) end
-    for i,s in ipairs(combo.steps) do
-        local lbl=Instance.new("TextLabel"); lbl.Size=UDim2.new(1,0,0,18); lbl.BackgroundTransparency=1
-        lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.Code; lbl.TextSize=12
-        lbl.TextColor3=Theme.dim; lbl.Text=string.format("%02d.  %s",i,s.label); lbl.Parent=dSteps
+--==== Watermark ====
+local WM=new("Frame",{Name="Watermark",Size=UDim2.fromOffset(220,26),Position=UDim2.fromOffset(10,10),BackgroundColor3=Colors.dark,BackgroundTransparency=0.15,BorderSizePixel=0,Parent=ScreenGui})
+corner(WM,6); stroke(WM,Colors.accent,1,0.4)
+local WMT=new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(10,0),Size=UDim2.fromScale(1,1),Font=Enum.Font.GothamBold,TextSize=12,TextColor3=Colors.text,TextXAlignment=Enum.TextXAlignment.Left,Parent=WM})
+local fa,ff,ft=0,0,os.clock()
+RunService.RenderStepped:Connect(function(dt)
+    fa=fa+dt; ff=ff+1
+    if os.clock()-ft>=1 then
+        local fps=math.floor(ff/fa); local ping=0
+        pcall(function() ping=math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
+        WMT.Text=string.format("Syntax | v1.0   FPS: %d   Ping: %d",fps,ping)
+        fa,ff,ft=0,0,os.clock()
     end
+end)
+
+--==================================================================
+-- WINDOW
+--==================================================================
+local Window={}; Window.__index=Window
+function Window.new()
+    local self=setmetatable({categories={},activeCat=nil},Window)
+    local main=new("Frame",{Name="Main",Size=UDim2.fromOffset(600,450),Position=UDim2.new(0.5,-300,0.5,-225),BackgroundColor3=Colors.bg,BackgroundTransparency=0.1,BorderSizePixel=0,Parent=ScreenGui})
+    corner(main,8); stroke(main,Colors.accent,1,0.15)
+
+    local title=new("Frame",{Size=UDim2.new(1,0,0,40),BackgroundColor3=Colors.accent,BorderSizePixel=0,Parent=main,ZIndex=2}); corner(title,8)
+    grad(title,Colors.accent,Colors.accent2,0)
+    new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(14,0),Size=UDim2.new(1,-120,1,0),Font=Enum.Font.GothamBlack,TextSize=18,TextColor3=Colors.text,TextXAlignment=Enum.TextXAlignment.Left,Text="SYNTAX",Parent=title,ZIndex=3})
+    local close=new("TextButton",{Size=UDim2.fromOffset(28,28),Position=UDim2.new(1,-34,0,6),BackgroundColor3=Colors.accent2,Text="×",Font=Enum.Font.GothamBold,TextSize=18,TextColor3=Colors.text,AutoButtonColor=false,Parent=title,ZIndex=3}); corner(close,6)
+    close.MouseEnter:Connect(function() tw(close,0.1,{BackgroundColor3=Colors.accent}) end)
+    close.MouseLeave:Connect(function() tw(close,0.1,{BackgroundColor3=Colors.accent2}) end)
+    close.MouseButton1Click:Connect(function() self:Hide() end)
+
+    local side=new("Frame",{Size=UDim2.new(0,150,1,-40),Position=UDim2.fromOffset(0,40),BackgroundColor3=Colors.dark,BackgroundTransparency=0.05,BorderSizePixel=0,Parent=main,ZIndex=2})
+    new("UIListLayout",{Padding=UDim.new(0,2),SortOrder=Enum.SortOrder.LayoutOrder,Parent=side})
+    new("UIPadding",{PaddingTop=UDim.new(0,8),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6),Parent=side})
+
+    local content=new("Frame",{Size=UDim2.new(1,-150,1,-40),Position=UDim2.fromOffset(150,40),BackgroundTransparency=1,Parent=main,ZIndex=2})
+
+    local search=new("TextBox",{Size=UDim2.new(1,-20,0,30),Position=UDim2.fromOffset(10,10),BackgroundColor3=Colors.panel,Text="",PlaceholderText="Поиск модулей...",Font=Enum.Font.Gotham,TextSize=13,TextColor3=Colors.text,PlaceholderColor3=Colors.sub,ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left,Parent=content}); corner(search,6); stroke(search,Colors.off,1,0.5)
+    new("UIPadding",{PaddingLeft=UDim.new(0,10),Parent=search})
+    search.Focused:Connect(function() stroke(search,Colors.accent,1,0) end)
+    search.FocusLost:Connect(function() stroke(search,Colors.off,1,0.5) end)
+    local scroll=new("ScrollingFrame",{Size=UDim2.new(1,-20,1,-56),Position=UDim2.fromOffset(10,48),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=Colors.accent,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Parent=content})
+    new("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder,Parent=scroll})
+
+    self.gui=main; self.title=title; self.side=side; self.content=content; self.scroll=scroll; self.search=search; self.visible=true
+    self.extraPages={}
+
+    local drag,ds,sp
+    title.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=true; ds=i.Position; sp=main.Position end end)
+    title.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=false; Config.data.pos={sp.X.Offset,sp.Y.Offset}; saveCfg() end end)
+    UIS.InputChanged:Connect(function(i) if drag and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local d=i.Position-ds; main.Position=UDim2.new(0.5,sp.X.Offset+d.X,0.5,sp.Y.Offset+d.Y) end end)
+    if Config.data.pos then main.Position=UDim2.new(0.5,Config.data.pos[1],0.5,Config.data.pos[2]) end
+
+    search:GetPropertyChangedSignal("Text"):Connect(function()
+        local q=search.Text:lower()
+        for _,cat in ipairs(self.categories) do
+            for _,m in ipairs(cat.modules) do
+                m.row.Visible=(q=="" or m.name:lower():find(q,1,true)~=nil)
+            end
+        end
+    end)
+    self:Show(true)
+    return self
 end
-local function rebuildList(cat)
-    for _,ch in ipairs(list:GetChildren()) do if ch:IsA("TextButton") then ch:Destroy() end end
-    for _,combo in ipairs(Raw) do
-        if combo.cat==cat then
-            local b=Instance.new("TextButton"); b.Size=UDim2.new(1,0,0,30); b.BackgroundColor3=Theme.card
-            b.BackgroundTransparency=0.25; b.Text="  "..combo.name; b.TextXAlignment=Enum.TextXAlignment.Left
-            b.Font=Enum.Font.GothamMedium; b.TextSize=12; b.TextColor3=Theme.text; b.Parent=list; corner(b,7)
-            b.MouseButton1Click:Connect(function() renderDetail(combo) end)
-            b.MouseEnter:Connect(function() tween(b,0.12,{BackgroundTransparency=0.05}) end)
-            b.MouseLeave:Connect(function() tween(b,0.12,{BackgroundTransparency=0.25}) end)
+
+function Window:Show(instant)
+    self.visible=true; ScreenGui.Enabled=true
+    if instant then return end
+    self.gui.Size=UDim2.fromOffset(600*0.8,450*0.8); self.gui.BackgroundTransparency=1
+    tw(self.gui,0.2,{Size=UDim2.fromOffset(600,450),BackgroundTransparency=0.1})
+end
+function Window:Hide()
+    self.visible=false
+    tw(self.gui,0.15,{Size=UDim2.fromOffset(540,405),BackgroundTransparency=1})
+    task.wait(0.15); ScreenGui.Enabled=false
+    self.gui.Size=UDim2.fromOffset(600,450); self.gui.BackgroundTransparency=0.1
+end
+
+function Window:Category(name)
+    local cat={name=name,modules={},window=self}
+    local btn=new("TextButton",{Size=UDim2.new(1,0,0,35),BackgroundColor3=Colors.dark,BackgroundTransparency=1,Text="     "..name,Font=Enum.Font.GothamMedium,TextSize=14,TextColor3=Colors.sub,TextXAlignment=Enum.TextXAlignment.Left,AutoButtonColor=false,Parent=self.side}); corner(btn,6)
+    new("Frame",{Size=UDim2.fromOffset(4,0),BackgroundColor3=Colors.accent,BorderSizePixel=0,Parent=btn})
+    local page=new("Frame",{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,Visible=false,Parent=self.scroll})
+    new("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder,Parent=page})
+    cat.btn=btn; cat.page=page
+    btn.MouseEnter:Connect(function() if self.activeCat~=cat then tw(btn,0.15,{BackgroundColor3=Colors.hover,BackgroundTransparency=0}) end end)
+    btn.MouseLeave:Connect(function() if self.activeCat~=cat then tw(btn,0.15,{BackgroundTransparency=1}) end end)
+    btn.MouseButton1Click:Connect(function() self:SelectCategory(cat) end)
+    table.insert(self.categories,cat)
+    if not self.activeCat then self:SelectCategory(cat) end
+    return cat
+end
+
+function Window:SelectCategory(cat)
+    for _,c in ipairs(self.categories) do
+        local on=(c==cat)
+        c.page.Visible=on and not c.isCombos
+        tw(c.btn,0.15,{BackgroundColor3=on and Colors.panel or Colors.dark,BackgroundTransparency=on and 0 or 1,TextColor3=on and Colors.text or Colors.sub})
+    end
+    self.scroll.Visible=not cat.isCombos
+    self.search.Visible=not cat.isCombos
+    for _,pg in ipairs(self.extraPages) do pg.Visible=(pg.owner==cat) end
+    self.activeCat=cat
+end
+
+function Window:Module(cat,name,default,callback)
+    local mod={name=name,cat=cat,value=FlagsGet(name)}
+    if mod.value==nil then mod.value=default or false end
+    FlagsSet(name,mod.value)
+    local row=new("Frame",{Size=UDim2.new(1,0,0,40),BackgroundColor3=Colors.panel,BackgroundTransparency=0.05,BorderSizePixel=0,Parent=cat.page}); corner(row,4); stroke(row,Colors.off,1,0.6)
+    mod.row=row
+    new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(15,0),Size=UDim2.new(1,-80,1,0),Font=Enum.Font.Gotham,TextSize=14,TextColor3=Colors.text,TextXAlignment=Enum.TextXAlignment.Left,Text=name,Parent=row})
+    local track=new("Frame",{Size=UDim2.fromOffset(40,20),Position=UDim2.new(1,-52,0.5,-10),BackgroundColor3=mod.value and Colors.accent or Colors.off,Parent=row}); corner(track,10)
+    local knob=new("Frame",{Size=UDim2.fromOffset(16,16),BackgroundColor3=Colors.text,Position=mod.value and UDim2.fromOffset(22,2) or UDim2.fromOffset(2,2),Parent=track}); corner(knob,8)
+    local function set(v) mod.value=v; FlagsSet(name,v); tw(track,0.2,{BackgroundColor3=v and Colors.accent or Colors.off}); tw(knob,0.2,{Position=v and UDim2.fromOffset(22,2) or UDim2.fromOffset(2,2)}); saveCfg(); if callback then callback(v) end end
+    mod.Set=set; mod.Get=function() return mod.value end
+    track.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(not mod.value) end end)
+    table.insert(cat.modules,mod)
+    return mod
+end
+
+--==================================================================
+-- ВКЛАДКА COMBOS
+--==================================================================
+local function buildCombosPage(win, cat)
+    local content = win.content
+    local page = new("Frame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Visible=false,Parent=content})
+    page.owner = cat
+    table.insert(win.extraPages, page)
+
+    local searchFruit = new("TextBox",{Size=UDim2.new(1,-20,0,30),Position=UDim2.fromOffset(10,10),BackgroundColor3=Colors.panel,Text="",PlaceholderText="Поиск фрукта...",Font=Enum.Font.Gotham,TextSize=13,TextColor3=Colors.text,PlaceholderColor3=Colors.sub,ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left,Parent=page}); corner(searchFruit,6); stroke(searchFruit,Colors.off,1,0.5)
+    new("UIPadding",{PaddingLeft=UDim.new(0,10),Parent=searchFruit})
+
+    local fruitList = new("ScrollingFrame",{Size=UDim2.new(0,180,1,-92),Position=UDim2.fromOffset(10,48),BackgroundColor3=Colors.dark,BackgroundTransparency=0.05,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=Colors.accent,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Parent=page}); corner(fruitList,6)
+    new("UIListLayout",{Padding=UDim.new(0,2),Parent=fruitList})
+    new("UIPadding",{PaddingTop=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4),Parent=fruitList})
+
+    local comboList = new("ScrollingFrame",{Size=UDim2.new(1,-210,1,-92),Position=UDim2.fromOffset(200,48),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=Colors.accent,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Parent=page})
+    new("UIListLayout",{Padding=UDim.new(0,6),Parent=comboList})
+
+    local bottom = new("Frame",{Size=UDim2.new(1,-20,0,34),Position=UDim2.new(0,10,1,-40),BackgroundTransparency=1,Parent=page})
+    local autoBtn = new("TextButton",{Size=UDim2.fromOffset(200,30),Position=UDim2.fromOffset(0,2),BackgroundColor3=Colors.off,Text="Auto Combo: OFF",Font=Enum.Font.GothamBold,TextSize=13,TextColor3=Colors.text,AutoButtonColor=false,Parent=bottom}); corner(autoBtn,6)
+    local delayLbl = new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(214,0),Size=UDim2.fromOffset(120,30),Font=Enum.Font.Gotham,TextSize=12,TextColor3=Colors.sub,TextXAlignment=Enum.TextXAlignment.Left,Text="Delay: 0.15",Parent=bottom})
+    local delayBar = new("Frame",{Size=UDim2.fromOffset(150,6),Position=UDim2.fromOffset(214,22),BackgroundColor3=Colors.off,Parent=bottom}); corner(delayBar,3)
+    local delayFill = new("Frame",{Size=UDim2.new(0.22,0,1,0),BackgroundColor3=Colors.accent,Parent=delayBar}); corner(delayFill,3); grad(delayFill,Colors.accent,Colors.accent2,0)
+
+    local state = getgenv().SyntaxComboState or {fruit=nil,index=1,delay=0.15,auto=false,range=15}
+    getgenv().SyntaxComboState = state
+    state.delay = state.delay or 0.15
+
+    local function updateAuto()
+        autoBtn.Text = "Auto Combo: "..(state.auto and "ON" or "OFF")
+        autoBtn.BackgroundColor3 = state.auto and Colors.accent or Colors.off
+    end
+    updateAuto()
+    autoBtn.MouseButton1Click:Connect(function()
+        state.auto=not state.auto; updateAuto(); saveCfg()
+        Notify("Combos","Auto Combo "..(state.auto and "ON" or "OFF"),state.auto and "success" or "error")
+    end)
+
+    local function setDelay(d)
+        state.delay=math.clamp(d,0.05,0.5)
+        delayLbl.Text=string.format("Delay: %.2f",state.delay)
+        delayFill.Size=UDim2.new((state.delay-0.05)/0.45,0,1,0)
+        getgenv().ComboDelay=state.delay; saveCfg()
+    end
+    setDelay(state.delay)
+    local dDrag=false
+    delayBar.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dDrag=true end end)
+    UIS.InputChanged:Connect(function(i) if dDrag and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local r=math.clamp((i.Position.X-delayBar.AbsolutePosition.X)/delayBar.AbsoluteSize.X,0,1); setDelay(0.05+0.45*r) end end)
+    UIS.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dDrag=false end end)
+
+    local function difficultyColor(d)
+        if d=="Very Easy" or d=="Easy" then return Colors.success
+        elseif d=="Medium" then return Colors.warn
+        else return Colors.error end
+    end
+
+    local function buildCombos(fruit)
+        for _,ch in ipairs(comboList:GetChildren()) do if ch:IsA("Frame") or ch:IsA("TextLabel") then ch:Destroy() end end
+        local list = Combos[fruit]
+        if not list then
+            new("TextLabel",{Size=UDim2.new(1,0,0,30),BackgroundTransparency=1,Font=Enum.Font.Gotham,TextSize=14,TextColor3=Colors.sub,Text="Нет комбо для этого фрукта",Parent=comboList})
+            return
+        end
+        for i,combo in ipairs(list) do
+            local card=new("Frame",{Size=UDim2.new(1,-10,0,90),BackgroundColor3=Colors.panel,BackgroundTransparency=0.05,BorderSizePixel=0,Parent=comboList}); corner(card,6); stroke(card,Colors.accent,1,0.6)
+            new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-80,0,18),Font=Enum.Font.GothamBold,TextSize=14,TextColor3=Colors.text,TextXAlignment=Enum.TextXAlignment.Left,Text=string.format("Combo %d — %s",i,combo.name),Parent=card})
+            new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(12,28),Size=UDim2.new(1,-80,0,16),Font=Enum.Font.Code,TextSize=12,TextColor3=Colors.accent,TextXAlignment=Enum.TextXAlignment.Left,Text=table.concat(combo.moves," → "),Parent=card})
+            new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(12,48),Size=UDim2.new(0,200,0,14),Font=Enum.Font.Gotham,TextSize=11,TextColor3=Colors.sub,TextXAlignment=Enum.TextXAlignment.Left,Text="Target: "..(combo.target or "All"),Parent=card})
+            new("TextLabel",{BackgroundTransparency=1,Position=UDim2.fromOffset(12,64),Size=UDim2.new(0,200,0,14),Font=Enum.Font.Gotham,TextSize=11,TextColor3=difficultyColor(combo.difficulty),TextXAlignment=Enum.TextXAlignment.Left,Text="Difficulty: "..(combo.difficulty or "Medium"),Parent=card})
+            local run=new("TextButton",{Size=UDim2.fromOffset(36,36),Position=UDim2.new(1,-48,0.5,-18),BackgroundColor3=Colors.accent,Text="▶",Font=Enum.Font.GothamBold,TextSize=16,TextColor3=Colors.text,AutoButtonColor=false,Parent=card}); corner(run,6)
+            run.MouseButton1Click:Connect(function()
+                ExecuteCombo(fruit,i,state.delay)
+                Notify("Combo",fruit.." · "..combo.name,"success")
+            end)
+            local select=new("TextButton",{Size=UDim2.new(1,-60,0,20),Position=UDim2.fromOffset(12,68),BackgroundColor3=Colors.panel2,Text="Выбрать для Auto",Font=Enum.Font.Gotham,TextSize=11,TextColor3=Colors.sub,AutoButtonColor=false,Parent=card}); corner(select,4)
+            select.MouseButton1Click:Connect(function()
+                state.fruit=fruit; state.index=i; saveCfg()
+                Notify("Combos","Selected: "..fruit.." · "..combo.name,"success")
+            end)
         end
     end
-end
-local catButtons={}
-local function selectCat(cat)
-    for c,btn in pairs(catButtons) do tween(btn,0.15,{BackgroundTransparency=(c==cat) and 0.7 or 1, TextColor3=(c==cat) and Theme.text or Theme.dim}) end
-    rebuildList(cat); renderDetail(nil)
-end
-local seen={}
-for _,c in ipairs(Raw) do
-    if not seen[c.cat] then
-        seen[c.cat]=true
-        local b=Instance.new("TextButton"); b.Size=UDim2.new(1,0,0,30); b.BackgroundColor3=Theme.card
-        b.BackgroundTransparency=1; b.Text="  "..c.cat; b.TextXAlignment=Enum.TextXAlignment.Left
-        b.Font=Enum.Font.GothamMedium; b.TextSize=12; b.TextColor3=Theme.dim; b.Parent=cats; corner(b,7)
-        b.MouseButton1Click:Connect(function() selectCat(c.cat) end)
-        catButtons[c.cat]=b
+
+    local fruitButtons = {}
+    local function selectFruit(fruit)
+        state.fruit=fruit; saveCfg()
+        for f,b in pairs(fruitButtons) do
+            tw(b,0.15,{BackgroundColor3=(f==fruit) and Colors.hover or Colors.panel, TextColor3=(f==fruit) and Colors.text or Colors.sub})
+        end
+        buildCombos(fruit)
     end
+    local function rebuildFruits(filter)
+        for _,ch in ipairs(fruitList:GetChildren()) do if ch:IsA("TextButton") then ch:Destroy() end end
+        fruitButtons={}
+        filter=(filter or ""):lower()
+        local names={}
+        for name in pairs(Combos) do table.insert(names,name) end
+        table.sort(names)
+        for _,name in ipairs(names) do
+            if filter=="" or name:lower():find(filter,1,true) then
+                local b=new("TextButton",{Size=UDim2.new(1,0,0,32),BackgroundColor3=Colors.panel,BackgroundTransparency=0.1,Text="   "..name,Font=Enum.Font.Gotham,TextSize=13,TextColor3=Colors.sub,TextXAlignment=Enum.TextXAlignment.Left,AutoButtonColor=false,Parent=fruitList}); corner(b,4)
+                b.MouseEnter:Connect(function() if state.fruit~=name then tw(b,0.12,{BackgroundColor3=Colors.hover}) end end)
+                b.MouseLeave:Connect(function() if state.fruit~=name then tw(b,0.12,{BackgroundColor3=Colors.panel}) end end)
+                b.MouseButton1Click:Connect(function() selectFruit(name) end)
+                fruitButtons[name]=b
+            end
+        end
+    end
+    searchFruit:GetPropertyChangedSignal("Text"):Connect(function() rebuildFruits(searchFruit.Text) end)
+    rebuildFruits("")
+    local first
+    for name in pairs(Combos) do first=first or name end
+    if first then selectFruit(first) end
+
+    return page
 end
-selectCat(Raw[1].cat)
-runBtn.MouseButton1Click:Connect(function() if selected then runCombo(selected) end end)
-stopBtn.MouseButton1Click:Connect(stopCombo)
 
 --==================================================================
--- WIDGETS
+-- BUILD
 --==================================================================
-win:Toggle(tabPvP, "aimbot", false)
-win:Slider(tabPvP, "aim_range", 5, 150, 60)
-win:Slider(tabPvP, "aim_fov", 5, 180, 25)
-win:Slider(tabPvP, "aim_smooth", 3, 50, 12)
-win:Keybind(tabPvP, "aim_key", Enum.KeyCode.E)
-win:Toggle(tabPvP, "aim_predict", false)
-win:Toggle(tabPvP, "autoparry", false)
-win:Textbox(tabPvP, "dash_key", "q")
-win:Textbox(tabPvP, "look_key", "h")
-win:Slider(tabPvP, "combo_speed", 5, 30, 10)
-win:Button(tabPvP, "combo_library", function() SG.Enabled = not SG.Enabled end)
+local win=Window.new()
+getgenv().SyntaxWindow=win
 
-win:Toggle(tabVisual, "esp", false)
-win:Toggle(tabVisual, "esp_names", true)
-win:Toggle(tabVisual, "esp_distance", true)
+local Combat=win:Category("Combat")
+local PlayerC=win:Category("Player")
+local Movement=win:Category("Movement")
+local Visuals=win:Category("Visuals")
+local Farming=win:Category("Farming")
+local CombosCat=win:Category("Combos")
+local Misc=win:Category("Misc")
+local Settings=win:Category("Settings")
 
-win:Keybind(tabMisc, "menu_key", Enum.KeyCode.RightShift)
-win:Mode(tabMisc, "language", {"English","Русский"}, 1, function(opt, i)
-    Lang = (i == 2) and "ru" or "en"
-    applyLanguage()
-end)
-win:Toggle(tabMisc, "anti_afk", false)
+CombosCat.isCombos=true
+buildCombosPage(win, CombosCat)
 
-RunService.Heartbeat:Connect(function()
-    if Flags["anti_afk"] and LP then
-        pcall(function()
-            local vu = game:GetService("VirtualUser")
-            vu:CaptureController()
-            vu:ClickButton2(Vector2.new())
-        end)
-    end
-end)
+-- Пример модулей
+win:Module(Combat,"Aimbot",false,function(v) Notify("Aimbot",v and "Enabled" or "Disabled",v and "success" or "error") end)
+win:Module(Combat,"AutoParry",false)
+win:Module(PlayerC,"Speed",false)
+win:Module(PlayerC,"Anti-AFK",false)
+win:Module(Movement,"Infinite Jump",false)
+win:Module(Visuals,"Player ESP",false)
+win:Module(Farming,"Auto Farm",false)
+win:Module(Misc,"Watermark",true)
+win:Module(Settings,"Notifications",true)
 
+-- Открытие/закрытие
 UIS.InputBegan:Connect(function(i,gp)
     if gp then return end
-    if i.KeyCode==Enum.KeyCode.LeftAlt then SG.Enabled = not SG.Enabled end
+    if i.KeyCode==Enum.KeyCode.RightShift then
+        if win.visible then win:Hide() else win:Show() end
+    end
 end)
 
-getgenv().Syntax = {Window=Window, win=win, Theme=Theme, Flags=Flags, applyLanguage=applyLanguage}
-getgenv().SyntaxCombos = {list=Raw, run=runCombo, stop=stopCombo, parse=parseCombo}
-print("[Syntax] v5 loaded. Combos: "..#Raw.." | Menu: RightShift | Combo: LeftAlt")
+Notify("Syntax","ClickGUI loaded. RightShift to toggle.","success")
