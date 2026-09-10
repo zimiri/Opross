@@ -1,22 +1,23 @@
 --==================================================================
--- Syntax — Blox Fruits PvP Suite
--- init.lua : UI-движок (окно, вкладки, виджеты, анимации)
--- Загрузка: loadstring(game:HttpGet("<RAW_URL>/init.lua"))()
+-- Syntax — Blox Fruits PvP Suite  (полная версия)
+-- Загрузка: loadstring(game:HttpGet("https://raw.githubusercontent.com/zimiri/Opross/refs/heads/main/Syntax"))()
+-- Открытие меню: RightShift  |  Combo Library: LeftAlt
 --==================================================================
 
 --== Сервисы ==--
-local Players        = game:GetService("Players")
-local UIS            = game:GetService("UserInputService")
-local TweenService   = game:GetService("TweenService")
-local RunService     = game:GetService("RunService")
-local LP             = Players.LocalPlayer
+local Players      = game:GetService("Players")
+local UIS          = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService   = game:GetService("RunService")
+local LP           = Players.LocalPlayer
+local cam          = workspace.CurrentCamera
 
 --== Тема ==--
 local Theme = {
     bg      = Color3.fromRGB(14, 14, 16),
     panel   = Color3.fromRGB(20, 20, 24),
     card    = Color3.fromRGB(28, 28, 34),
-    accent  = Color3.fromRGB(255, 75, 75),   -- #FF4B4B
+    accent  = Color3.fromRGB(255, 75, 75),
     accent2 = Color3.fromRGB(192, 57, 43),
     text    = Color3.fromRGB(235, 235, 238),
     dim     = Color3.fromRGB(150, 150, 158),
@@ -24,11 +25,11 @@ local Theme = {
     off     = Color3.fromRGB(45, 45, 52)
 }
 
---== Глобальный конфиг (сюда модули пишут свои флаги) ==--
+--== Флаги (общий конфиг) ==--
 getgenv().SyntaxFlags = getgenv().SyntaxFlags or {}
 local Flags = getgenv().SyntaxFlags
 
---== Родитель GUI (устойчиво к разным executor'ам) ==--
+--== Родитель GUI ==--
 local function getGuiParent()
     if gethui then
         local ok, hui = pcall(gethui)
@@ -39,7 +40,6 @@ local function getGuiParent()
     return LP:WaitForChild("PlayerGui")
 end
 
---== Создание ScreenGui ==--
 local GUI = Instance.new("ScreenGui")
 GUI.Name = "SyntaxUI"
 GUI.ResetOnSpawn = false
@@ -48,33 +48,25 @@ GUI.IgnoreGuiInset = true
 pcall(function() GUI.Parent = getGuiParent() end)
 if not GUI.Parent then GUI.Parent = LP:WaitForChild("PlayerGui") end
 
---==================================================================
--- Хелперы
---==================================================================
-local function corner(parent, r)
-    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 8); c.Parent = parent; return c
+--== Хелперы ==--
+local function corner(o, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 8); c.Parent = o; return c end
+local function stroke(o, c, t, tr)
+    local s = Instance.new("UIStroke"); s.Color = c or Color3.fromRGB(255,255,255)
+    s.Thickness = t or 1; s.Transparency = tr or 0.8; s.Parent = o; return s
 end
-local function stroke(parent, color, thickness, transparency)
-    local s = Instance.new("UIStroke")
-    s.Color = color or Color3.fromRGB(255,255,255)
-    s.Thickness = thickness or 1
-    s.Transparency = transparency or 0.7
-    s.Parent = parent
-    return s
-end
-local function tween(obj, time, props, style)
-    local t = TweenService:Create(obj, TweenInfo.new(time or 0.15, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
+local function tween(o, time, props, style)
+    local t = TweenService:Create(o, TweenInfo.new(time or 0.15, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
     t:Play(); return t
 end
 
 --==================================================================
--- Окно
+-- ОКНО
 --==================================================================
 local Window = {}
 Window.__index = Window
 
 function Window.new(title, subtitle)
-    local self = setmetatable({ tabs = {}, activeTab = nil, minimized = false }, Window)
+    local self = setmetatable({ tabs = {}, activeTab = nil }, Window)
 
     local main = Instance.new("Frame")
     main.Name = "Window"
@@ -84,167 +76,88 @@ function Window.new(title, subtitle)
     main.BackgroundTransparency = 0.08
     main.BorderSizePixel = 0
     main.Parent = GUI
-    corner(main, 10)
-    stroke(main, Color3.fromRGB(255,255,255), 1, 0.85)
+    corner(main, 10); stroke(main, Color3.fromRGB(255,255,255), 1, 0.85)
 
-    -- Свечение-акцент по периметру
     local glow = Instance.new("Frame")
-    glow.Size = UDim2.new(1, 10, 1, 10)
-    glow.Position = UDim2.fromOffset(-5, -5)
-    glow.BackgroundColor3 = Theme.accent
-    glow.BackgroundTransparency = 0.92
-    glow.BorderSizePixel = 0
-    glow.ZIndex = 0
-    glow.Parent = main
-    corner(glow, 14)
+    glow.Size = UDim2.new(1, 10, 1, 10); glow.Position = UDim2.fromOffset(-5, -5)
+    glow.BackgroundColor3 = Theme.accent; glow.BackgroundTransparency = 0.92
+    glow.BorderSizePixel = 0; glow.ZIndex = 0; glow.Parent = main; corner(glow, 14)
 
-    -- Шапка
     local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 34)
-    header.BackgroundTransparency = 1
-    header.Parent = main
+    header.Size = UDim2.new(1, 0, 0, 34); header.BackgroundTransparency = 1; header.Parent = main
 
     local titleLbl = Instance.new("TextLabel")
-    titleLbl.BackgroundTransparency = 1
-    titleLbl.Position = UDim2.fromOffset(14, 0)
-    titleLbl.Size = UDim2.new(1, -120, 1, 0)
-    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-    titleLbl.Font = Enum.Font.GothamBold
-    titleLbl.TextSize = 15
-    titleLbl.TextColor3 = Theme.text
-    titleLbl.Text = title
-    titleLbl.Parent = header
+    titleLbl.BackgroundTransparency = 1; titleLbl.Position = UDim2.fromOffset(14, 0)
+    titleLbl.Size = UDim2.new(1, -120, 1, 0); titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Font = Enum.Font.GothamBold; titleLbl.TextSize = 15; titleLbl.TextColor3 = Theme.text
+    titleLbl.Text = title; titleLbl.Parent = header
 
     local subLbl = Instance.new("TextLabel")
-    subLbl.BackgroundTransparency = 1
-    subLbl.Position = UDim2.new(1, -150, 0, 0)
-    subLbl.Size = UDim2.fromOffset(100, 34)
-    subLbl.TextXAlignment = Enum.TextXAlignment.Right
-    subLbl.Font = Enum.Font.Gotham
-    subLbl.TextSize = 11
-    subLbl.TextColor3 = Theme.accent
-    subLbl.Text = subtitle or ""
-    subLbl.Parent = header
+    subLbl.BackgroundTransparency = 1; subLbl.Position = UDim2.new(1, -150, 0, 0)
+    subLbl.Size = UDim2.fromOffset(100, 34); subLbl.TextXAlignment = Enum.TextXAlignment.Right
+    subLbl.Font = Enum.Font.Gotham; subLbl.TextSize = 11; subLbl.TextColor3 = Theme.accent
+    subLbl.Text = subtitle or ""; subLbl.Parent = header
 
     local close = Instance.new("TextButton")
-    close.Size = UDim2.fromOffset(18, 18)
-    close.Position = UDim2.new(1, -26, 0, 8)
-    close.BackgroundColor3 = Theme.card
-    close.Text = "×"
-    close.Font = Enum.Font.GothamBold
-    close.TextSize = 14
-    close.TextColor3 = Theme.text
-    close.Parent = header
-    corner(close, 6)
+    close.Size = UDim2.fromOffset(18, 18); close.Position = UDim2.new(1, -26, 0, 8)
+    close.BackgroundColor3 = Theme.card; close.Text = "×"; close.Font = Enum.Font.GothamBold
+    close.TextSize = 14; close.TextColor3 = Theme.text; close.Parent = header; corner(close, 6)
     close.MouseButton1Click:Connect(function() GUI.Enabled = false end)
 
-    -- Левая полоса вкладок
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 118, 1, -46)
-    sidebar.Position = UDim2.fromOffset(10, 40)
-    sidebar.BackgroundColor3 = Theme.panel
-    sidebar.BackgroundTransparency = 0.15
-    sidebar.BorderSizePixel = 0
-    sidebar.Parent = main
-    corner(sidebar, 8)
+    sidebar.Size = UDim2.new(0, 118, 1, -46); sidebar.Position = UDim2.fromOffset(10, 40)
+    sidebar.BackgroundColor3 = Theme.panel; sidebar.BackgroundTransparency = 0.15
+    sidebar.BorderSizePixel = 0; sidebar.Parent = main; corner(sidebar, 8)
+    local sidebarList = Instance.new("UIListLayout"); sidebarList.Padding = UDim.new(0, 4); sidebarList.Parent = sidebar
+    local sidebarPad = Instance.new("UIPadding"); sidebarPad.PaddingTop = UDim.new(0, 6)
+    sidebarPad.PaddingLeft = UDim.new(0, 6); sidebarPad.PaddingRight = UDim.new(0, 6); sidebarPad.Parent = sidebar
 
-    local sidebarList = Instance.new("UIListLayout")
-    sidebarList.Padding = UDim.new(0, 4)
-    sidebarList.SortOrder = Enum.SortOrder.LayoutOrder
-    sidebarList.Parent = sidebar
-    local sidebarPad = Instance.new("UIPadding")
-    sidebarPad.PaddingTop = UDim.new(0, 6)
-    sidebarPad.PaddingLeft = UDim.new(0, 6)
-    sidebarPad.PaddingRight = UDim.new(0, 6)
-    sidebarPad.Parent = sidebar
-
-    -- Контейнер контента
     local content = Instance.new("ScrollingFrame")
-    content.Size = UDim2.new(1, -140, 1, -50)
-    content.Position = UDim2.fromOffset(132, 40)
-    content.BackgroundTransparency = 1
-    content.BorderSizePixel = 0
-    content.ScrollBarThickness = 2
-    content.ScrollBarImageColor3 = Theme.accent
-    content.CanvasSize = UDim2.new(0, 0, 0, 0)
-    content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    content.Parent = main
+    content.Size = UDim2.new(1, -140, 1, -50); content.Position = UDim2.fromOffset(132, 40)
+    content.BackgroundTransparency = 1; content.BorderSizePixel = 0
+    content.ScrollBarThickness = 2; content.ScrollBarImageColor3 = Theme.accent
+    content.CanvasSize = UDim2.new(); content.AutomaticCanvasSize = Enum.AutomaticSize.Y; content.Parent = main
+    local contentList = Instance.new("UIListLayout"); contentList.Padding = UDim.new(0, 6); contentList.Parent = content
+    local contentPad = Instance.new("UIPadding"); contentPad.PaddingTop = UDim.new(0, 4)
+    contentPad.PaddingRight = UDim.new(0, 8); contentPad.Parent = content
 
-    local contentList = Instance.new("UIListLayout")
-    contentList.Padding = UDim.new(0, 6)
-    contentList.SortOrder = Enum.SortOrder.LayoutOrder
-    contentList.Parent = content
-    local contentPad = Instance.new("UIPadding")
-    contentPad.PaddingTop = UDim.new(0, 4)
-    contentPad.PaddingRight = UDim.new(0, 8)
-    contentPad.Parent = content
+    self.gui = main; self.sidebar = sidebar; self.content = content; self.header = header
 
-    self.gui = main
-    self.sidebar = sidebar
-    self.content = content
-    self.close = close
-    self.header = header
-
-    -- Перетаскивание окна
     local dragging, dragStart, startPos
-    header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging, dragStart, startPos = true, input.Position, main.Position
-        end
+    header.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging, dragStart, startPos = true, i.Position, main.Position end
     end)
-    header.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    header.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local d = input.Position - dragStart
+    UIS.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = i.Position - dragStart
             main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
         end
     end)
 
-    -- Плавное открытие
-    main.Size = UDim2.fromOffset(520 * 0.92, 360 * 0.92)
-    main.BackgroundTransparency = 1
+    main.Size = UDim2.fromOffset(520 * 0.92, 360 * 0.92); main.BackgroundTransparency = 1
     tween(main, 0.22, { Size = UDim2.fromOffset(520, 360), BackgroundTransparency = 0.08 })
 
     return self
 end
 
 function Window:Tab(name)
-    local tab = { name = name, window = self, rows = {} }
-
+    local tab = { name = name, window = self }
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 30)
-    btn.BackgroundColor3 = Theme.card
-    btn.BackgroundTransparency = 1
-    btn.Text = "  " .. name
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.Font = Enum.Font.GothamMedium
-    btn.TextSize = 13
-    btn.TextColor3 = Theme.dim
-    btn.Parent = self.sidebar
-    corner(btn, 6)
+    btn.Size = UDim2.new(1, 0, 0, 30); btn.BackgroundColor3 = Theme.card; btn.BackgroundTransparency = 1
+    btn.Text = "  " .. name; btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Font = Enum.Font.GothamMedium; btn.TextSize = 13; btn.TextColor3 = Theme.dim
+    btn.Parent = self.sidebar; corner(btn, 6)
 
-    -- Контейнер контента для этой вкладки
     local page = Instance.new("Frame")
-    page.Size = UDim2.new(1, 0, 0, 0)
-    page.AutomaticSize = Enum.AutomaticSize.Y
-    page.BackgroundTransparency = 1
-    page.Visible = false
-    page.Parent = self.content
+    page.Size = UDim2.new(1, 0, 0, 0); page.AutomaticSize = Enum.AutomaticSize.Y
+    page.BackgroundTransparency = 1; page.Visible = false; page.Parent = self.content
+    local pageList = Instance.new("UIListLayout"); pageList.Padding = UDim.new(0, 6); pageList.Parent = page
 
-    local pageList = Instance.new("UIListLayout")
-    pageList.Padding = UDim.new(0, 6)
-    pageList.SortOrder = Enum.SortOrder.LayoutOrder
-    pageList.Parent = page
-
-    tab.button = btn
-    tab.page = page
-
-    btn.MouseButton1Click:Connect(function()
-        self:SelectTab(tab)
-    end)
-
+    tab.button = btn; tab.page = page
+    btn.MouseButton1Click:Connect(function() self:SelectTab(tab) end)
     table.insert(self.tabs, tab)
     if not self.activeTab then self:SelectTab(tab) end
     return tab
@@ -254,83 +167,50 @@ function Window:SelectTab(tab)
     for _, t in ipairs(self.tabs) do
         local on = (t == tab)
         t.page.Visible = on
-        tween(t.button, 0.15, {
-            BackgroundTransparency = on and 0.75 or 1,
-            TextColor3 = on and Theme.text or Theme.dim
-        })
+        tween(t.button, 0.15, { BackgroundTransparency = on and 0.75 or 1,
+            TextColor3 = on and Theme.text or Theme.dim })
     end
     self.activeTab = tab
 end
 
---==================================================================
--- Виджеты
---==================================================================
-local function makeRow(page, height)
+--== Виджеты ==--
+local function makeRow(page, h)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, height or 34)
-    row.BackgroundColor3 = Theme.card
-    row.BackgroundTransparency = 0.25
-    row.BorderSizePixel = 0
-    row.Parent = page
-    corner(row, 7)
+    row.Size = UDim2.new(1, 0, 0, h or 34); row.BackgroundColor3 = Theme.card
+    row.BackgroundTransparency = 0.25; row.BorderSizePixel = 0; row.Parent = page; corner(row, 7)
     return row
 end
 
 function Window:Toggle(tab, text, default, callback)
     local row = makeRow(tab.page, 34)
     local lbl = Instance.new("TextLabel")
-    lbl.BackgroundTransparency = 1
-    lbl.Position = UDim2.fromOffset(12, 0)
-    lbl.Size = UDim2.new(1, -70, 1, 0)
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 13
-    lbl.TextColor3 = Theme.text
-    lbl.Text = text
-    lbl.Parent = row
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.fromOffset(12, 0); lbl.Size = UDim2.new(1, -70, 1, 0)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.Font = Enum.Font.Gotham; lbl.TextSize = 13
+    lbl.TextColor3 = Theme.text; lbl.Text = text; lbl.Parent = row
 
-    local state = default or false
-    Flags[text] = state
-
+    local state = default or false; Flags[text] = state
     local track = Instance.new("Frame")
-    track.Size = UDim2.fromOffset(38, 18)
-    track.Position = UDim2.new(1, -50, 0.5, -9)
-    track.BackgroundColor3 = state and Theme.on or Theme.off
-    track.Parent = row
-    corner(track, 9)
-
+    track.Size = UDim2.fromOffset(38, 18); track.Position = UDim2.new(1, -50, 0.5, -9)
+    track.BackgroundColor3 = state and Theme.on or Theme.off; track.Parent = row; corner(track, 9)
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.fromOffset(14, 14)
-    knob.Position = state and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2)
-    knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    knob.Parent = track
-    corner(knob, 7)
+    knob.Size = UDim2.fromOffset(14, 14); knob.Position = state and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2)
+    knob.BackgroundColor3 = Color3.fromRGB(255,255,255); knob.Parent = track; corner(knob, 7)
 
     local function set(v)
-        state = v
-        Flags[text] = v
+        state = v; Flags[text] = v
         tween(track, 0.15, { BackgroundColor3 = v and Theme.on or Theme.off })
         tween(knob, 0.15, { Position = v and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2) })
         if callback then callback(v) end
     end
-
-    row.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then set(not state) end
-    end)
-
+    row.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then set(not state) end end)
     return { Set = set, Get = function() return state end }
 end
 
 function Window:Button(tab, text, callback)
     local row = makeRow(tab.page, 32)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = text
-    btn.Font = Enum.Font.GothamMedium
-    btn.TextSize = 13
-    btn.TextColor3 = Theme.text
-    btn.Parent = row
+    btn.Size = UDim2.new(1, 0, 1, 0); btn.BackgroundTransparency = 1; btn.Text = text
+    btn.Font = Enum.Font.GothamMedium; btn.TextSize = 13; btn.TextColor3 = Theme.text; btn.Parent = row
     btn.MouseEnter:Connect(function() tween(row, 0.12, { BackgroundColor3 = Theme.accent, BackgroundTransparency = 0.3 }) end)
     btn.MouseLeave:Connect(function() tween(row, 0.12, { BackgroundColor3 = Theme.card, BackgroundTransparency = 0.25 }) end)
     btn.MouseButton1Click:Connect(function() if callback then callback() end end)
@@ -340,63 +220,34 @@ end
 function Window:Slider(tab, text, min, max, default, callback)
     min, max = min or 0, max or 100
     local row = makeRow(tab.page, 44)
-
     local lbl = Instance.new("TextLabel")
-    lbl.BackgroundTransparency = 1
-    lbl.Position = UDim2.fromOffset(12, 0)
-    lbl.Size = UDim2.new(1, -70, 0, 22)
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 13
-    lbl.TextColor3 = Theme.text
-    lbl.Text = text
-    lbl.Parent = row
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.fromOffset(12, 0); lbl.Size = UDim2.new(1, -70, 0, 22)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.Font = Enum.Font.Gotham; lbl.TextSize = 13
+    lbl.TextColor3 = Theme.text; lbl.Text = text; lbl.Parent = row
 
-    local val = default or min
-    Flags[text] = val
+    local val = default or min; Flags[text] = val
     local valLbl = Instance.new("TextLabel")
-    valLbl.BackgroundTransparency = 1
-    valLbl.Position = UDim2.new(1, -60, 0, 0)
-    valLbl.Size = UDim2.fromOffset(48, 22)
-    valLbl.TextXAlignment = Enum.TextXAlignment.Right
-    valLbl.Font = Enum.Font.GothamBold
-    valLbl.TextSize = 12
-    valLbl.TextColor3 = Theme.accent
-    valLbl.Text = tostring(val)
-    valLbl.Parent = row
+    valLbl.BackgroundTransparency = 1; valLbl.Position = UDim2.new(1, -60, 0, 0); valLbl.Size = UDim2.fromOffset(48, 22)
+    valLbl.TextXAlignment = Enum.TextXAlignment.Right; valLbl.Font = Enum.Font.GothamBold
+    valLbl.TextSize = 12; valLbl.TextColor3 = Theme.accent; valLbl.Text = tostring(val); valLbl.Parent = row
 
     local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(1, -24, 0, 6)
-    bar.Position = UDim2.fromOffset(12, 28)
-    bar.BackgroundColor3 = Theme.off
-    bar.Parent = row
-    corner(bar, 3)
-
+    bar.Size = UDim2.new(1, -24, 0, 6); bar.Position = UDim2.fromOffset(12, 28)
+    bar.BackgroundColor3 = Theme.off; bar.Parent = row; corner(bar, 3)
     local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = Theme.accent
-    fill.Parent = bar
-    corner(fill, 3)
+    fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0); fill.BackgroundColor3 = Theme.accent
+    fill.Parent = bar; corner(fill, 3)
 
     local dragging = false
-    local function apply(input)
-        local rel = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-        val = math.floor(min + (max - min) * rel + 0.5)
-        Flags[text] = val
-        valLbl.Text = tostring(val)
-        fill.Size = UDim2.new(rel, 0, 1, 0)
+    local function apply(i)
+        local rel = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+        val = math.floor(min + (max - min) * rel + 0.5); Flags[text] = val
+        valLbl.Text = tostring(val); fill.Size = UDim2.new(rel, 0, 1, 0)
         if callback then callback(val) end
     end
-    bar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; apply(input) end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then apply(input) end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-    end)
-
+    bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; apply(i) end end)
+    UIS.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then apply(i) end end)
+    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
     return { Set = function(v) val = v; Flags[text] = v; valLbl.Text = tostring(v); fill.Size = UDim2.new((v-min)/(max-min),0,1,0) end,
              Get = function() return val end }
 end
@@ -404,63 +255,394 @@ end
 function Window:Textbox(tab, text, default, callback)
     local row = makeRow(tab.page, 36)
     local lbl = Instance.new("TextLabel")
-    lbl.BackgroundTransparency = 1
-    lbl.Position = UDim2.fromOffset(12, 0)
-    lbl.Size = UDim2.new(0.45, 0, 1, 0)
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 13
-    lbl.TextColor3 = Theme.text
-    lbl.Text = text
-    lbl.Parent = row
-
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.fromOffset(12, 0); lbl.Size = UDim2.new(0.45, 0, 1, 0)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.Font = Enum.Font.Gotham; lbl.TextSize = 13
+    lbl.TextColor3 = Theme.text; lbl.Text = text; lbl.Parent = row
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0.5, -12, 0, 22)
-    box.Position = UDim2.new(0.5, 0, 0.5, -11)
-    box.BackgroundColor3 = Theme.panel
-    box.Text = default or ""
-    box.PlaceholderText = "..."
-    box.Font = Enum.Font.Gotham
-    box.TextSize = 12
-    box.TextColor3 = Theme.text
-    box.PlaceholderColor3 = Theme.dim
-    box.ClearTextOnFocus = false
-    box.Parent = row
-    corner(box, 5)
-
-    box.FocusLost:Connect(function()
-        Flags[text] = box.Text
-        if callback then callback(box.Text) end
-    end)
+    box.Size = UDim2.new(0.5, -12, 0, 22); box.Position = UDim2.new(0.5, 0, 0.5, -11)
+    box.BackgroundColor3 = Theme.panel; box.Text = default or ""; box.PlaceholderText = "..."
+    box.Font = Enum.Font.Gotham; box.TextSize = 12; box.TextColor3 = Theme.text
+    box.PlaceholderColor3 = Theme.dim; box.ClearTextOnFocus = false; box.Parent = row; corner(box, 5)
+    box.FocusLost:Connect(function() Flags[text] = box.Text; if callback then callback(box.Text) end end)
     Flags[text] = default
     return box
 end
 
 --==================================================================
--- Горячая клавиша открытия/закрытия
+-- ГОРЯЧИЕ КЛАВИШИ
 --==================================================================
-local TOGGLE_KEY = Enum.KeyCode.RightShift
-UIS.InputBegan:Connect(function(input, gp)
+UIS.InputBegan:Connect(function(i, gp)
     if gp then return end
-    if input.KeyCode == TOGGLE_KEY then
-        GUI.Enabled = not GUI.Enabled
+    if i.KeyCode == Enum.KeyCode.RightShift then GUI.Enabled = not GUI.Enabled end
+end)
+
+--==================================================================
+-- СОЗДАНИЕ ОКНА
+--==================================================================
+local win = Window.new("Syntax", "Blox Fruits · PvP")
+local tabPvP    = win:Tab("PvP")
+local tabVisual = win:Tab("Визуал")
+local tabMisc   = win:Tab("Миск")
+
+--==================================================================
+-- УТИЛИТЫ PvP
+--==================================================================
+local function alive(p)
+    return p and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0
+end
+local function root(p)
+    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+end
+local function nearest(maxRange)
+    local best, bestDist = nil, maxRange
+    local myRoot = root(LP); if not myRoot then return nil end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and alive(p) and root(p) then
+            local d = (myRoot.Position - root(p).Position).Magnitude
+            if d < bestDist then best, bestDist = p, d end
+        end
+    end
+    return best, bestDist
+end
+
+--==================================================================
+-- CombatAPI (заглушки под атаки/скиллы)
+--==================================================================
+local CombatAPI = {}
+function CombatAPI.attack() pcall(function() mouse1click() end) end
+function CombatAPI.skill(i) if i then pcall(function() keypress(tostring(i)); task.wait(0.05); keyrelease(tostring(i)) end) end end
+function CombatAPI.dash()
+    local k = Flags["Dash Key"]; if k and k ~= "" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end
+end
+function CombatAPI.parry() end
+getgenv().SyntaxCombat = CombatAPI
+
+--==================================================================
+-- Aimbot
+--==================================================================
+RunService.RenderStepped:Connect(function()
+    if not Flags["Aimbot"] then return end
+    local target = nearest(Flags["Aim Range"] or 40)
+    if target and root(target) then
+        cam.CFrame = CFrame.lookAt(cam.CFrame.Position, root(target).Position)
     end
 end)
 
---== Создаём окно и вкладки (модули добавим в следующих файлах) ==--
-local win = Window.new("Syntax", "Blox Fruits · PvP")
-local tabPvP = win:Tab("PvP")
-local tabVisual = win:Tab("Визуал")
-local tabMisc = win:Tab("Миск")
+--==================================================================
+-- AutoParry (реакция на урон)
+--==================================================================
+local lastHealth = nil
+RunService.Heartbeat:Connect(function()
+    if not Flags["AutoParry"] then lastHealth = nil; return end
+    local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    if lastHealth and hum.Health < lastHealth then CombatAPI.parry() end
+    lastHealth = hum.Health
+end)
 
--- Заглушки-примеры, чтобы увидеть виджеты:
+--==================================================================
+-- COMBO LIBRARY
+--==================================================================
+-- СЛОТЫ ИНСТРУМЕНТОВ: впиши свои номера хотбара 1..9
+local ToolSlots = {
+    -- ["Kitsune"]=1, ["Godhuman"]=2, ["CDK"]=3, ["Gravity Blade"]=4,
+    -- ["Superhuman"]=1, ["Venom Bow"]=2, ["Dragon"]=1, ["Ice"]=1,
+    -- ["Sanguine Art"]=1, ["Spikey Trident"]=2, ["Acidum Rifle"]=3,
+}
+
+-- БАЗА КОМБО
+local Raw = {
+    {name="Kitsune (Gravity Cane)", cat="Fruits", diff="Hard", target="Опытные", icon="",
+     combo="Gravity Blade Z -> Superhuman Z -> Venom Bow Z/X -> Dash -> Superhuman X -> Kitsune C -> Gravity Blade X"},
+    {name="Kitsune (Godhuman/CDK)", cat="Fruits", diff="Medium+", target="Опытные", icon="",
+     combo="CDK Z -> Kitsune C -> Kitsune X -> Kitsune Z -> Kitsune F -> Godhuman Z -> Godhuman C"},
+    {name="Control (Daggers)", cat="Fruits", diff="Medium", target="Все", icon="",
+     combo="Control X -> Control C -> Sword M1 x2 -> Godhuman Z -> Godhuman X -> Control V"},
+    {name="Venom", cat="Fruits", diff="Medium", target="Танки", icon="",
+     combo="Venom X -> Venom C -> Godhuman Z -> Godhuman X -> Venom V -> M1 spam"},
+    {name="Dragon", cat="Fruits", diff="Medium", target="Замесы", icon="",
+     combo="Dragon Z -> Dragon X -> Dragon C -> Godhuman Z -> Godhuman X"},
+    {name="Buddha (E-Claw)", cat="Fruits", diff="Easy", target="Выживание", icon="",
+     combo="Yama X -> Buddha X -> E-Claw X -> Soul Guitar Z -> Buddha V -> Buddha C"},
+    {name="Ice (новичкам)", cat="Fruits", diff="Easy+", target="Новички", icon="",
+     combo="Ice V -> Ice C -> Ice Z -> CDK Z -> CDK X -> Look back -> Sanguine Art C -> Z -> X"},
+    {name="Ice (Godhuman)", cat="Fruits", diff="Easy+", target="Новички", icon="",
+     combo="Ice V -> Ice C -> Godhuman M1 x2 -> Ice Z -> Godhuman Z -> C -> Spikey Trident X -> Godhuman X -> Ice X"},
+    {name="Rumble", cat="Fruits", diff="Medium", target="Все", icon="",
+     combo="Rumble C -> Rumble X -> Godhuman Z -> Godhuman C -> Sword M1 x2 -> Rumble V"},
+    {name="Shadow", cat="Fruits", diff="Medium", target="Все", icon="",
+     combo="Shadow C -> Shadow X -> Shadow V -> Godhuman Z -> Godhuman X -> Godhuman C"},
+    {name="Chop", cat="Fruits", diff="Medium", target="Фруктовики", icon="",
+     combo="Acidum Rifle Z -> Soru -> Chop X (hold) -> Godhuman Z -> Godhuman C -> CDK X -> Chop C (hold) -> Godhuman X"},
+    {name="Sand V2", cat="Fruits", diff="Medium", target="Мечники", icon="",
+     combo="Sand X -> Sand C -> Kabucha X -> Sand V -> Sand Z -> Spikey Trident X -> Godhuman Z -> Godhuman X -> Godhuman C"},
+    {name="Gravity", cat="Fruits", diff="Medium", target="Все", icon="",
+     combo="Gravity X -> Gravity V -> Godhuman Z -> Godhuman C -> CDK X -> Gravity Z -> Godhuman X -> Gravity C"},
+    {name="Pain", cat="Fruits", diff="Easy", target="Стиль", icon="",
+     combo="Gravity Z -> Godhuman C (hold) -> Godhuman C (hold) -> Pain F"},
+    {name="Love", cat="Fruits", diff="Easy", target="Все", icon="",
+     combo="E-Claw C -> E-Claw Z -> Yama X -> Love X -> Love C -> Love Z -> E-Claw X -> Love Z"},
+    {name="Portal (Canvander)", cat="Fruits", diff="Medium", target="Аим", icon="",
+     combo="Portal Z -> Canvander X -> Godhuman Z -> Godhuman C -> Portal V"},
+    {name="Gas", cat="Fruits", diff="Medium", target="Мета", icon="",
+     combo="Gas X -> Gas C -> Godhuman Z -> Godhuman X -> Gas V"},
+    {name="Tiger", cat="Fruits", diff="Hard", target="Мета U28", icon="",
+     combo="Tiger Z -> M1 x3 -> Tiger X -> Tiger C -> M1 x2 -> Tiger Z"},
+    {name="Spirit", cat="Fruits", diff="Very Hard", target="Скилловые", icon="",
+     combo="Spirit C -> Spirit X -> Spirit V -> Godhuman Z -> Godhuman C"},
+    {name="Mammoth", cat="Fruits", diff="Medium", target="Танки", icon="",
+     combo="Mammoth Z -> Mammoth X -> Mammoth C -> Godhuman Z -> Godhuman X"},
+    {name="Diamond", cat="Fruits", diff="Easy", target="Новички", icon="",
+     combo="Diamond Z -> Diamond X -> Diamond C -> Superhuman Z -> Superhuman C"},
+    {name="Quake", cat="Fruits", diff="Medium", target="AoE", icon="",
+     combo="Quake X -> Quake C -> Quake V -> Godhuman Z -> Godhuman X"},
+    {name="Dough (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
+     combo="X -> Z -> C -> Look down -> Godhuman Z -> C -> X"},
+    {name="Spider (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
+     combo="X -> Gravity Cane Z -> Z -> Godhuman Z -> X -> C -> V -> C"},
+    {name="Leopard (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
+     combo="C -> M1 x3 -> Z"},
+    {name="Blizzard (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
+     combo="Godhuman C -> Blizzard C -> Gravity Cane Z -> Blizzard X -> Godhuman Z -> X"},
+    {name="Dark (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
+     combo="Dark Step V -> Chop Z -> C -> X -> Dark Step X -> C -> Z"},
+    {name="T-Rex (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
+     combo="CDK X -> T-Rex X -> C -> Godhuman Z -> X -> C"},
+    {name="Ice (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
+     combo="V -> C -> Z -> CDK Z -> X -> Sanguine C -> Z -> X"},
+    {name="Control (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
+     combo="X -> C -> M1 x2 -> Godhuman Z -> X -> V"},
+    {name="Portal (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
+     combo="Z -> Canvander X -> Godhuman Z -> C -> V"},
+}
+
+-- ПАРСЕР
+local function parseCombo(str)
+    str = str:gsub("→", "|"):gsub("%->", "|"):gsub("/", "|")
+    local steps = {}
+    for token in string.gmatch(str, "([^|]+)") do
+        token = token:match("^%s*(.-)%s*$")
+        if token ~= "" then
+            local step = { label = token, delay = 0.2, type = "key" }
+            local lower = token:lower()
+            if token:find("M1") then
+                step.type = "click"
+                step.count = tonumber(token:match("x%s*(%d+)")) or (lower:find("spam") and 5 or 1)
+            elseif lower:find("dash") then
+                step.type = "dash"
+            elseif lower:find("look") then
+                step.type = "look"
+            else
+                local key = nil
+                for k in token:gmatch("%f[%a]([ZXCVF])%f[%A]") do key = k end
+                if not key then key = token:match("([ZXCVF])$") end
+                if key then
+                    step.key = key
+                    step.tool = (token:match("^(.-)%s*[ZXCVF]$") or token):gsub("%s+$", "")
+                    if step.tool == "" then step.tool = nil end
+                    step.hold = lower:find("hold") ~= nil
+                else
+                    step.type = "key"
+                    if token:match("^[ZXCVF]$") then step.key = token end
+                end
+            end
+            steps[#steps + 1] = step
+        end
+    end
+    return steps
+end
+for _, c in ipairs(Raw) do c.steps = parseCombo(c.combo) end
+
+-- ВЫПОЛНЕНИЕ
+local running = false
+local currentSlot = nil
+local runThread = nil
+
+local function switchTo(tool)
+    if not tool or tool == "" then return end
+    local slot = ToolSlots[tool]
+    if slot and slot ~= currentSlot then
+        pcall(function() keypress(tostring(slot)) end); task.wait(0.05)
+        pcall(function() keyrelease(tostring(slot)) end)
+        currentSlot = slot; task.wait(0.12)
+    end
+end
+
+local function execStep(step, delayMul)
+    if step.type == "key" and step.key then
+        switchTo(step.tool)
+        pcall(function() keypress(step.key:lower()) end)
+        task.wait(step.hold and 0.4 or 0.06)
+        pcall(function() keyrelease(step.key:lower()) end)
+    elseif step.type == "click" then
+        for _ = 1, (step.count or 1) do pcall(function() mouse1click() end); task.wait(0.08) end
+    elseif step.type == "dash" then
+        local k = Flags["Dash Key"]; if k and k ~= "" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end
+    elseif step.type == "look" then
+        local k = Flags["Look Key"]; if k and k ~= "" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end
+    end
+    task.wait((step.delay or 0.2) * (delayMul or 1))
+end
+
+local function runCombo(combo)
+    if runThread then task.cancel(runThread) end
+    running = true
+    runThread = task.spawn(function()
+        for _, step in ipairs(combo.steps) do
+            if not running then break end
+            execStep(step, (Flags["Combo Speed"] or 10) / 10)
+        end
+        running = false; runThread = nil
+    end)
+end
+local function stopCombo()
+    running = false
+    if runThread then task.cancel(runThread); runThread = nil end
+end
+
+-- ОКНО COMBO LIBRARY
+local SG = Instance.new("ScreenGui")
+SG.Name = "SyntaxCombos"; SG.ResetOnSpawn = false
+SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; SG.Enabled = false
+SG.Parent = GUI.Parent
+
+local W = Instance.new("Frame")
+W.Size = UDim2.fromOffset(640, 410); W.Position = UDim2.new(0.5, -320, 0.5, -205)
+W.BackgroundColor3 = Theme.bg; W.BackgroundTransparency = 0.05; W.BorderSizePixel = 0; W.Parent = SG
+corner(W, 10); stroke(W, Color3.fromRGB(255,255,255), 1, 0.85)
+
+local hdr = Instance.new("Frame"); hdr.Size = UDim2.new(1, 0, 0, 36); hdr.BackgroundTransparency = 1; hdr.Parent = W
+local tl = Instance.new("TextLabel")
+tl.BackgroundTransparency = 1; tl.Position = UDim2.fromOffset(14, 0); tl.Size = UDim2.new(1, -40, 1, 0)
+tl.TextXAlignment = Enum.TextXAlignment.Left; tl.Font = Enum.Font.GothamBold; tl.TextSize = 15
+tl.TextColor3 = Theme.text; tl.Text = "Combo Library"; tl.Parent = hdr
+local cl = Instance.new("TextButton")
+cl.Size = UDim2.fromOffset(18, 18); cl.Position = UDim2.new(1, -26, 0, 9); cl.BackgroundColor3 = Theme.card
+cl.Text = "×"; cl.Font = Enum.Font.GothamBold; cl.TextSize = 14; cl.TextColor3 = Theme.text; cl.Parent = hdr; corner(cl, 6)
+cl.MouseButton1Click:Connect(function() SG.Enabled = false end)
+do
+    local drag, ds, sp
+    hdr.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true; ds = i.Position; sp = W.Position end end)
+    hdr.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
+    UIS.InputChanged:Connect(function(i) if drag and i.UserInputType == Enum.UserInputType.MouseMovement then local d = i.Position - ds; W.Position = UDim2.new(sp.X.Scale, sp.X.Offset + d.X, sp.Y.Scale, sp.Y.Offset + d.Y) end end)
+end
+
+local cats = Instance.new("Frame")
+cats.Size = UDim2.new(0, 110, 1, -48); cats.Position = UDim2.fromOffset(10, 40)
+cats.BackgroundColor3 = Theme.panel; cats.BackgroundTransparency = 0.15; cats.Parent = W; corner(cats, 8)
+local catList = Instance.new("UIListLayout"); catList.Padding = UDim.new(0, 4); catList.Parent = cats
+local catPad = Instance.new("UIPadding"); catPad.PaddingTop = UDim.new(0, 6); catPad.PaddingLeft = UDim.new(0, 6); catPad.PaddingRight = UDim.new(0, 6); catPad.Parent = cats
+
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(0, 190, 1, -48); list.Position = UDim2.fromOffset(130, 40)
+list.BackgroundColor3 = Theme.panel; list.BackgroundTransparency = 0.15; list.BorderSizePixel = 0
+list.ScrollBarThickness = 2; list.ScrollBarImageColor3 = Theme.accent
+list.CanvasSize = UDim2.new(); list.AutomaticCanvasSize = Enum.AutomaticSize.Y; list.Parent = W; corner(list, 8)
+local listL = Instance.new("UIListLayout"); listL.Padding = UDim.new(0, 5); listL.Parent = list
+local listPad = Instance.new("UIPadding"); listPad.PaddingTop = UDim.new(0, 6); listPad.PaddingLeft = UDim.new(0, 6); listPad.PaddingRight = UDim.new(0, 6); listPad.Parent = list
+
+local detail = Instance.new("Frame")
+detail.Size = UDim2.new(1, -340, 1, -48); detail.Position = UDim2.fromOffset(330, 40)
+detail.BackgroundColor3 = Theme.panel; detail.BackgroundTransparency = 0.15; detail.Parent = W; corner(detail, 8)
+
+local dIcon = Instance.new("ImageLabel")
+dIcon.Size = UDim2.fromOffset(60, 60); dIcon.Position = UDim2.fromOffset(12, 12); dIcon.BackgroundColor3 = Theme.card
+dIcon.Image = ""; dIcon.Parent = detail; corner(dIcon, 8)
+
+local dName = Instance.new("TextLabel")
+dName.BackgroundTransparency = 1; dName.Position = UDim2.fromOffset(82, 12); dName.Size = UDim2.new(1, -92, 0, 20)
+dName.TextXAlignment = Enum.TextXAlignment.Left; dName.Font = Enum.Font.GothamBold; dName.TextSize = 14
+dName.TextColor3 = Theme.text; dName.Text = "—"; dName.Parent = detail
+
+local dMeta = Instance.new("TextLabel")
+dMeta.BackgroundTransparency = 1; dMeta.Position = UDim2.fromOffset(82, 32); dMeta.Size = UDim2.new(1, -92, 0, 18)
+dMeta.TextXAlignment = Enum.TextXAlignment.Left; dMeta.Font = Enum.Font.Gotham; dMeta.TextSize = 11
+dMeta.TextColor3 = Theme.accent; dMeta.Text = ""; dMeta.Parent = detail
+
+local dSteps = Instance.new("ScrollingFrame")
+dSteps.BackgroundTransparency = 1; dSteps.Position = UDim2.fromOffset(12, 82); dSteps.Size = UDim2.new(1, -24, 1, -160)
+dSteps.BorderSizePixel = 0; dSteps.ScrollBarThickness = 2; dSteps.ScrollBarImageColor3 = Theme.accent
+dSteps.CanvasSize = UDim2.new(); dSteps.AutomaticCanvasSize = Enum.AutomaticSize.Y; dSteps.Parent = detail
+local dStepsL = Instance.new("UIListLayout"); dStepsL.Padding = UDim.new(0, 2); dStepsL.Parent = dSteps
+
+local runBtn = Instance.new("TextButton")
+runBtn.Size = UDim2.new(1, -24, 0, 30); runBtn.Position = UDim2.new(0, 12, 1, -78)
+runBtn.BackgroundColor3 = Theme.accent; runBtn.Text = "▶  ЗАПУСТИТЬ"; runBtn.Font = Enum.Font.GothamBold
+runBtn.TextSize = 13; runBtn.TextColor3 = Color3.fromRGB(255,255,255); runBtn.Parent = detail; corner(runBtn, 7)
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(1, -24, 0, 26); stopBtn.Position = UDim2.new(0, 12, 1, -44)
+stopBtn.BackgroundColor3 = Theme.card; stopBtn.Text = "■  СТОП"; stopBtn.Font = Enum.Font.GothamMedium
+stopBtn.TextSize = 12; stopBtn.TextColor3 = Theme.text; stopBtn.Parent = detail; corner(stopBtn, 7)
+
+local selected = nil
+local function renderDetail(combo)
+    selected = combo
+    for _, ch in ipairs(dSteps:GetChildren()) do if ch:IsA("TextLabel") then ch:Destroy() end end
+    if not combo then dName.Text = "—"; dMeta.Text = ""; dIcon.Image = ""; return end
+    dName.Text = combo.name
+    dMeta.Text = string.format("%s · %s · %s", combo.cat, combo.diff, combo.target)
+    dIcon.Image = combo.icon or ""
+    for i, s in ipairs(combo.steps) do
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, 0, 0, 18); lbl.BackgroundTransparency = 1
+        lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.Font = Enum.Font.Code; lbl.TextSize = 12
+        lbl.TextColor3 = Theme.dim; lbl.Text = string.format("%02d.  %s", i, s.label); lbl.Parent = dSteps
+    end
+end
+
+local function rebuildList(cat)
+    for _, ch in ipairs(list:GetChildren()) do if ch:IsA("TextButton") then ch:Destroy() end end
+    for _, combo in ipairs(Raw) do
+        if combo.cat == cat then
+            local b = Instance.new("TextButton")
+            b.Size = UDim2.new(1, 0, 0, 30); b.BackgroundColor3 = Theme.card; b.BackgroundTransparency = 0.25
+            b.Text = "  " .. combo.name; b.TextXAlignment = Enum.TextXAlignment.Left
+            b.Font = Enum.Font.GothamMedium; b.TextSize = 12; b.TextColor3 = Theme.text; b.Parent = list; corner(b, 6)
+            b.MouseButton1Click:Connect(function() renderDetail(combo) end)
+            b.MouseEnter:Connect(function() tween(b, 0.12, { BackgroundTransparency = 0.05 }) end)
+            b.MouseLeave:Connect(function() tween(b, 0.12, { BackgroundTransparency = 0.25 }) end)
+        end
+    end
+end
+
+local catButtons = {}
+local function selectCat(cat)
+    for c, btn in pairs(catButtons) do
+        tween(btn, 0.15, { BackgroundTransparency = (c == cat) and 0.75 or 1,
+            TextColor3 = (c == cat) and Theme.text or Theme.dim })
+    end
+    rebuildList(cat); renderDetail(nil)
+end
+for _, cat in ipairs({"Fruits", "Swords", "Styles", "Guns"}) do
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 30); b.BackgroundColor3 = Theme.card; b.BackgroundTransparency = 1
+    b.Text = "  " .. cat; b.TextXAlignment = Enum.TextXAlignment.Left
+    b.Font = Enum.Font.GothamMedium; b.TextSize = 12; b.TextColor3 = Theme.dim; b.Parent = cats; corner(b, 6)
+    b.MouseButton1Click:Connect(function() selectCat(cat) end)
+    catButtons[cat] = b
+end
+selectCat("Fruits")
+
+runBtn.MouseButton1Click:Connect(function() if selected then runCombo(selected) end end)
+stopBtn.MouseButton1Click:Connect(stopCombo)
+
+--==================================================================
+-- ВИДЖЕТЫ В ОКНЕ
+--==================================================================
 win:Toggle(tabPvP, "Aimbot", false)
 win:Slider(tabPvP, "Aim Range", 5, 120, 40)
 win:Toggle(tabPvP, "AutoParry", false)
-win:Toggle(tabPvP, "Комбо", false)
-win:Button(tabPvP, "Тест кнопки", function() print("Syntax: ok") end)
+win:Textbox(tabPvP, "Dash Key", "q")
+win:Textbox(tabPvP, "Look Key", "h")
+win:Slider(tabPvP, "Combo Speed", 5, 30, 10)
+win:Button(tabPvP, "Combo Library", function() SG.Enabled = not SG.Enabled end)
 win:Toggle(tabVisual, "ESP игроков", false)
 win:Toggle(tabMisc, "Anti-AFK", false)
 
--- Экспортируем для следующих файлов:
+UIS.InputBegan:Connect(function(i, gp)
+    if gp then return end
+    if i.KeyCode == Enum.KeyCode.LeftAlt then SG.Enabled = not SG.Enabled end
+end)
+
 getgenv().Syntax = { Window = Window, win = win, Theme = Theme, Flags = Flags }
+getgenv().SyntaxCombos = { list = Raw, run = runCombo, stop = stopCombo, parse = parseCombo }
+print("[Syntax] Загружено. Комбо: " .. #Raw .. " | Меню: RightShift | Комбо: LeftAlt")
