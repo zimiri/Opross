@@ -1,10 +1,9 @@
 --==================================================================
--- Syntax — Blox Fruits PvP Suite  (полная версия)
--- Загрузка: loadstring(game:HttpGet("https://raw.githubusercontent.com/zimiri/Opross/refs/heads/main/Syntax"))()
--- Открытие меню: RightShift  |  Combo Library: LeftAlt
+-- Syntax — Blox Fruits PvP Suite v3
+-- Меню: RightShift (открыть/закрыть) | Combo Library: LeftAlt | Мобилка: кнопка на экране
+-- Загрузка: loadstring(game:HttpGet("https://raw.githubusercontent.com/zimiri/Opross/refs/heads/main/Syntax?t="..os.time()))()
 --==================================================================
 
---== Сервисы ==--
 local Players      = game:GetService("Players")
 local UIS          = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -14,50 +13,63 @@ local cam          = workspace.CurrentCamera
 
 --== Тема ==--
 local Theme = {
-    bg      = Color3.fromRGB(14, 14, 16),
-    panel   = Color3.fromRGB(20, 20, 24),
-    card    = Color3.fromRGB(28, 28, 34),
+    bg      = Color3.fromRGB(13, 13, 17),
+    bg2     = Color3.fromRGB(20, 20, 28),
+    panel   = Color3.fromRGB(22, 22, 30),
+    card    = Color3.fromRGB(30, 30, 40),
     accent  = Color3.fromRGB(255, 75, 75),
-    accent2 = Color3.fromRGB(192, 57, 43),
-    text    = Color3.fromRGB(235, 235, 238),
-    dim     = Color3.fromRGB(150, 150, 158),
-    on      = Color3.fromRGB(255, 75, 75),
-    off     = Color3.fromRGB(45, 45, 52)
+    accent2 = Color3.fromRGB(180, 40, 90),
+    text    = Color3.fromRGB(238, 238, 242),
+    dim     = Color3.fromRGB(150, 150, 162),
+    off     = Color3.fromRGB(48, 48, 60)
 }
 
---== Флаги (общий конфиг) ==--
 getgenv().SyntaxFlags = getgenv().SyntaxFlags or {}
 local Flags = getgenv().SyntaxFlags
 
---== Родитель GUI ==--
+--==================================================================
+-- Хелперы
+--==================================================================
+local function corner(o, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 8); c.Parent = o; return c end
+local function stroke(o, c, t, tr)
+    local s = Instance.new("UIStroke"); s.Color = c or Color3.fromRGB(255,255,255)
+    s.Thickness = t or 1; s.Transparency = tr or 0.8; s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = o; return s
+end
+local function tween(o, time, props, style)
+    local t = TweenService:Create(o, TweenInfo.new(time or 0.15, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
+    t:Play(); return t
+end
+local function gradient(o, c1, c2, rot)
+    local g = Instance.new("UIGradient")
+    g.Color = ColorSequence.new(c1, c2)
+    g.Rotation = rot or 0
+    g.Parent = o
+    return g
+end
+
 local function getGuiParent()
-    if gethui then
-        local ok, hui = pcall(gethui)
-        if ok and hui then return hui end
-    end
+    if gethui then local ok, h = pcall(gethui); if ok and h then return h end end
     local ok, cg = pcall(function() return game:GetService("CoreGui") end)
     if ok and cg then return cg end
     return LP:WaitForChild("PlayerGui")
 end
 
 local GUI = Instance.new("ScreenGui")
-GUI.Name = "SyntaxUI"
-GUI.ResetOnSpawn = false
-GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-GUI.IgnoreGuiInset = true
+GUI.Name = "SyntaxUI"; GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; GUI.IgnoreGuiInset = true
 pcall(function() GUI.Parent = getGuiParent() end)
 if not GUI.Parent then GUI.Parent = LP:WaitForChild("PlayerGui") end
 
---== Хелперы ==--
-local function corner(o, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 8); c.Parent = o; return c end
-local function stroke(o, c, t, tr)
-    local s = Instance.new("UIStroke"); s.Color = c or Color3.fromRGB(255,255,255)
-    s.Thickness = t or 1; s.Transparency = tr or 0.8; s.Parent = o; return s
-end
-local function tween(o, time, props, style)
-    local t = TweenService:Create(o, TweenInfo.new(time or 0.15, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
-    t:Play(); return t
-end
+--==================================================================
+-- ИКОНКИ ФРУКТОВ (впиши свои rbxassetid://...)
+--==================================================================
+local FruitIcons = {
+    -- ["Yeti"] = "rbxassetid://000000",
+    -- ["Dough"] = "rbxassetid://000000",
+    -- ["Kitsune"] = "rbxassetid://000000",
+    -- ...
+}
 
 --==================================================================
 -- ОКНО
@@ -70,50 +82,66 @@ function Window.new(title, subtitle)
 
     local main = Instance.new("Frame")
     main.Name = "Window"
-    main.Size = UDim2.fromOffset(520, 360)
-    main.Position = UDim2.new(0.5, -260, 0.5, -180)
+    main.Size = UDim2.fromOffset(540, 380)
+    main.Position = UDim2.new(0.5, -270, 0.5, -190)
     main.BackgroundColor3 = Theme.bg
-    main.BackgroundTransparency = 0.08
+    main.BackgroundTransparency = 0.05
     main.BorderSizePixel = 0
     main.Parent = GUI
-    corner(main, 10); stroke(main, Color3.fromRGB(255,255,255), 1, 0.85)
+    corner(main, 12)
+    stroke(main, Color3.fromRGB(255,255,255), 1, 0.88)
+    gradient(main, Theme.bg, Theme.bg2, 90)
 
     local glow = Instance.new("Frame")
-    glow.Size = UDim2.new(1, 10, 1, 10); glow.Position = UDim2.fromOffset(-5, -5)
-    glow.BackgroundColor3 = Theme.accent; glow.BackgroundTransparency = 0.92
-    glow.BorderSizePixel = 0; glow.ZIndex = 0; glow.Parent = main; corner(glow, 14)
+    glow.Size = UDim2.new(1, 12, 1, 12); glow.Position = UDim2.fromOffset(-6, -6)
+    glow.BackgroundColor3 = Theme.accent; glow.BackgroundTransparency = 0.9
+    glow.BorderSizePixel = 0; glow.ZIndex = 0; glow.Parent = main; corner(glow, 16)
+    gradient(glow, Theme.accent, Theme.accent2, 45)
 
     local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 34); header.BackgroundTransparency = 1; header.Parent = main
+    header.Size = UDim2.new(1, 0, 0, 40); header.BackgroundTransparency = 1; header.Parent = main
+
+    -- Лого-плитка
+    local logo = Instance.new("Frame")
+    logo.Size = UDim2.fromOffset(24, 24); logo.Position = UDim2.fromOffset(12, 8)
+    logo.BackgroundColor3 = Theme.accent; logo.BorderSizePixel = 0; logo.Parent = header; corner(logo, 7)
+    gradient(logo, Theme.accent, Theme.accent2, 45)
+    local logoLbl = Instance.new("TextLabel")
+    logoLbl.BackgroundTransparency = 1; logoLbl.Size = UDim2.fromScale(1,1)
+    logoLbl.Font = Enum.Font.GothamBlack; logoLbl.TextSize = 14; logoLbl.TextColor3 = Color3.fromRGB(255,255,255)
+    logoLbl.Text = "S"; logoLbl.Parent = logo
 
     local titleLbl = Instance.new("TextLabel")
-    titleLbl.BackgroundTransparency = 1; titleLbl.Position = UDim2.fromOffset(14, 0)
-    titleLbl.Size = UDim2.new(1, -120, 1, 0); titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-    titleLbl.Font = Enum.Font.GothamBold; titleLbl.TextSize = 15; titleLbl.TextColor3 = Theme.text
+    titleLbl.BackgroundTransparency = 1; titleLbl.Position = UDim2.fromOffset(44, 6)
+    titleLbl.Size = UDim2.new(1, -160, 0, 20); titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Font = Enum.Font.GothamBold; titleLbl.TextSize = 16; titleLbl.TextColor3 = Theme.text
     titleLbl.Text = title; titleLbl.Parent = header
+    gradient(titleLbl, Color3.fromRGB(255,255,255), Theme.accent, 0)
 
     local subLbl = Instance.new("TextLabel")
-    subLbl.BackgroundTransparency = 1; subLbl.Position = UDim2.new(1, -150, 0, 0)
-    subLbl.Size = UDim2.fromOffset(100, 34); subLbl.TextXAlignment = Enum.TextXAlignment.Right
-    subLbl.Font = Enum.Font.Gotham; subLbl.TextSize = 11; subLbl.TextColor3 = Theme.accent
+    subLbl.BackgroundTransparency = 1; subLbl.Position = UDim2.fromOffset(44, 22)
+    subLbl.Size = UDim2.new(1, -160, 0, 14); subLbl.TextXAlignment = Enum.TextXAlignment.Left
+    subLbl.Font = Enum.Font.Gotham; subLbl.TextSize = 10; subLbl.TextColor3 = Theme.dim
     subLbl.Text = subtitle or ""; subLbl.Parent = header
 
     local close = Instance.new("TextButton")
-    close.Size = UDim2.fromOffset(18, 18); close.Position = UDim2.new(1, -26, 0, 8)
+    close.Size = UDim2.fromOffset(20, 20); close.Position = UDim2.new(1, -30, 0, 10)
     close.BackgroundColor3 = Theme.card; close.Text = "×"; close.Font = Enum.Font.GothamBold
-    close.TextSize = 14; close.TextColor3 = Theme.text; close.Parent = header; corner(close, 6)
+    close.TextSize = 15; close.TextColor3 = Theme.text; close.Parent = header; corner(close, 7)
     close.MouseButton1Click:Connect(function() GUI.Enabled = false end)
+    close.MouseEnter:Connect(function() tween(close, 0.12, { BackgroundColor3 = Theme.accent }) end)
+    close.MouseLeave:Connect(function() tween(close, 0.12, { BackgroundColor3 = Theme.card }) end)
 
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 118, 1, -46); sidebar.Position = UDim2.fromOffset(10, 40)
-    sidebar.BackgroundColor3 = Theme.panel; sidebar.BackgroundTransparency = 0.15
-    sidebar.BorderSizePixel = 0; sidebar.Parent = main; corner(sidebar, 8)
+    sidebar.Size = UDim2.new(0, 122, 1, -52); sidebar.Position = UDim2.fromOffset(10, 46)
+    sidebar.BackgroundColor3 = Theme.panel; sidebar.BackgroundTransparency = 0.2
+    sidebar.BorderSizePixel = 0; sidebar.Parent = main; corner(sidebar, 10)
     local sidebarList = Instance.new("UIListLayout"); sidebarList.Padding = UDim.new(0, 4); sidebarList.Parent = sidebar
     local sidebarPad = Instance.new("UIPadding"); sidebarPad.PaddingTop = UDim.new(0, 6)
     sidebarPad.PaddingLeft = UDim.new(0, 6); sidebarPad.PaddingRight = UDim.new(0, 6); sidebarPad.Parent = sidebar
 
     local content = Instance.new("ScrollingFrame")
-    content.Size = UDim2.new(1, -140, 1, -50); content.Position = UDim2.fromOffset(132, 40)
+    content.Size = UDim2.new(1, -150, 1, -56); content.Position = UDim2.fromOffset(140, 46)
     content.BackgroundTransparency = 1; content.BorderSizePixel = 0
     content.ScrollBarThickness = 2; content.ScrollBarImageColor3 = Theme.accent
     content.CanvasSize = UDim2.new(); content.AutomaticCanvasSize = Enum.AutomaticSize.Y; content.Parent = main
@@ -125,20 +153,22 @@ function Window.new(title, subtitle)
 
     local dragging, dragStart, startPos
     header.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging, dragStart, startPos = true, i.Position, main.Position end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging, dragStart, startPos = true, i.Position, main.Position
+        end
     end)
     header.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end
     end)
     UIS.InputChanged:Connect(function(i)
-        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
             local d = i.Position - dragStart
             main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
         end
     end)
 
-    main.Size = UDim2.fromOffset(520 * 0.92, 360 * 0.92); main.BackgroundTransparency = 1
-    tween(main, 0.22, { Size = UDim2.fromOffset(520, 360), BackgroundTransparency = 0.08 })
+    main.Size = UDim2.fromOffset(540 * 0.9, 380 * 0.9); main.BackgroundTransparency = 1
+    tween(main, 0.24, { Size = UDim2.fromOffset(540, 380), BackgroundTransparency = 0.05 })
 
     return self
 end
@@ -146,10 +176,10 @@ end
 function Window:Tab(name)
     local tab = { name = name, window = self }
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 30); btn.BackgroundColor3 = Theme.card; btn.BackgroundTransparency = 1
+    btn.Size = UDim2.new(1, 0, 0, 32); btn.BackgroundColor3 = Theme.card; btn.BackgroundTransparency = 1
     btn.Text = "  " .. name; btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.Font = Enum.Font.GothamMedium; btn.TextSize = 13; btn.TextColor3 = Theme.dim
-    btn.Parent = self.sidebar; corner(btn, 6)
+    btn.Parent = self.sidebar; corner(btn, 7)
 
     local page = Instance.new("Frame")
     page.Size = UDim2.new(1, 0, 0, 0); page.AutomaticSize = Enum.AutomaticSize.Y
@@ -167,17 +197,16 @@ function Window:SelectTab(tab)
     for _, t in ipairs(self.tabs) do
         local on = (t == tab)
         t.page.Visible = on
-        tween(t.button, 0.15, { BackgroundTransparency = on and 0.75 or 1,
+        tween(t.button, 0.15, { BackgroundTransparency = on and 0.7 or 1,
             TextColor3 = on and Theme.text or Theme.dim })
     end
     self.activeTab = tab
 end
 
---== Виджеты ==--
 local function makeRow(page, h)
     local row = Instance.new("Frame")
     row.Size = UDim2.new(1, 0, 0, h or 34); row.BackgroundColor3 = Theme.card
-    row.BackgroundTransparency = 0.25; row.BorderSizePixel = 0; row.Parent = page; corner(row, 7)
+    row.BackgroundTransparency = 0.25; row.BorderSizePixel = 0; row.Parent = page; corner(row, 8)
     return row
 end
 
@@ -190,19 +219,21 @@ function Window:Toggle(tab, text, default, callback)
 
     local state = default or false; Flags[text] = state
     local track = Instance.new("Frame")
-    track.Size = UDim2.fromOffset(38, 18); track.Position = UDim2.new(1, -50, 0.5, -9)
-    track.BackgroundColor3 = state and Theme.on or Theme.off; track.Parent = row; corner(track, 9)
+    track.Size = UDim2.fromOffset(40, 20); track.Position = UDim2.new(1, -52, 0.5, -10)
+    track.BackgroundColor3 = state and Theme.accent or Theme.off; track.Parent = row; corner(track, 10)
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.fromOffset(14, 14); knob.Position = state and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2)
-    knob.BackgroundColor3 = Color3.fromRGB(255,255,255); knob.Parent = track; corner(knob, 7)
+    knob.Size = UDim2.fromOffset(16, 16); knob.Position = state and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2)
+    knob.BackgroundColor3 = Color3.fromRGB(255,255,255); knob.Parent = track; corner(knob, 8)
 
     local function set(v)
         state = v; Flags[text] = v
-        tween(track, 0.15, { BackgroundColor3 = v and Theme.on or Theme.off })
+        tween(track, 0.15, { BackgroundColor3 = v and Theme.accent or Theme.off })
         tween(knob, 0.15, { Position = v and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2) })
         if callback then callback(v) end
     end
-    row.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then set(not state) end end)
+    row.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then set(not state) end
+    end)
     return { Set = set, Get = function() return state end }
 end
 
@@ -211,7 +242,7 @@ function Window:Button(tab, text, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 1, 0); btn.BackgroundTransparency = 1; btn.Text = text
     btn.Font = Enum.Font.GothamMedium; btn.TextSize = 13; btn.TextColor3 = Theme.text; btn.Parent = row
-    btn.MouseEnter:Connect(function() tween(row, 0.12, { BackgroundColor3 = Theme.accent, BackgroundTransparency = 0.3 }) end)
+    btn.MouseEnter:Connect(function() tween(row, 0.12, { BackgroundColor3 = Theme.accent, BackgroundTransparency = 0.25 }) end)
     btn.MouseLeave:Connect(function() tween(row, 0.12, { BackgroundColor3 = Theme.card, BackgroundTransparency = 0.25 }) end)
     btn.MouseButton1Click:Connect(function() if callback then callback() end end)
     return btn
@@ -224,19 +255,17 @@ function Window:Slider(tab, text, min, max, default, callback)
     lbl.BackgroundTransparency = 1; lbl.Position = UDim2.fromOffset(12, 0); lbl.Size = UDim2.new(1, -70, 0, 22)
     lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.Font = Enum.Font.Gotham; lbl.TextSize = 13
     lbl.TextColor3 = Theme.text; lbl.Text = text; lbl.Parent = row
-
     local val = default or min; Flags[text] = val
     local valLbl = Instance.new("TextLabel")
     valLbl.BackgroundTransparency = 1; valLbl.Position = UDim2.new(1, -60, 0, 0); valLbl.Size = UDim2.fromOffset(48, 22)
     valLbl.TextXAlignment = Enum.TextXAlignment.Right; valLbl.Font = Enum.Font.GothamBold
     valLbl.TextSize = 12; valLbl.TextColor3 = Theme.accent; valLbl.Text = tostring(val); valLbl.Parent = row
-
     local bar = Instance.new("Frame")
     bar.Size = UDim2.new(1, -24, 0, 6); bar.Position = UDim2.fromOffset(12, 28)
     bar.BackgroundColor3 = Theme.off; bar.Parent = row; corner(bar, 3)
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0); fill.BackgroundColor3 = Theme.accent
-    fill.Parent = bar; corner(fill, 3)
+    fill.Parent = bar; corner(fill, 3); gradient(fill, Theme.accent, Theme.accent2, 0)
 
     local dragging = false
     local function apply(i)
@@ -245,9 +274,9 @@ function Window:Slider(tab, text, min, max, default, callback)
         valLbl.Text = tostring(val); fill.Size = UDim2.new(rel, 0, 1, 0)
         if callback then callback(val) end
     end
-    bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; apply(i) end end)
-    UIS.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then apply(i) end end)
-    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+    bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true; apply(i) end end)
+    UIS.InputChanged:Connect(function(i) if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then apply(i) end end)
+    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
     return { Set = function(v) val = v; Flags[text] = v; valLbl.Text = tostring(v); fill.Size = UDim2.new((v-min)/(max-min),0,1,0) end,
              Get = function() return val end }
 end
@@ -262,14 +291,53 @@ function Window:Textbox(tab, text, default, callback)
     box.Size = UDim2.new(0.5, -12, 0, 22); box.Position = UDim2.new(0.5, 0, 0.5, -11)
     box.BackgroundColor3 = Theme.panel; box.Text = default or ""; box.PlaceholderText = "..."
     box.Font = Enum.Font.Gotham; box.TextSize = 12; box.TextColor3 = Theme.text
-    box.PlaceholderColor3 = Theme.dim; box.ClearTextOnFocus = false; box.Parent = row; corner(box, 5)
+    box.PlaceholderColor3 = Theme.dim; box.ClearTextOnFocus = false; box.Parent = row; corner(box, 6)
     box.FocusLost:Connect(function() Flags[text] = box.Text; if callback then callback(box.Text) end end)
     Flags[text] = default
     return box
 end
 
 --==================================================================
--- ГОРЯЧИЕ КЛАВИШИ
+-- МОБИЛЬНАЯ КНОПКА
+--==================================================================
+if UIS.TouchEnabled then
+    local btn = Instance.new("TextButton")
+    btn.Name = "SyntaxMobileBtn"
+    btn.Size = UDim2.fromOffset(52, 52)
+    btn.Position = UDim2.new(0, 20, 0.5, -26)
+    btn.BackgroundColor3 = Theme.accent
+    btn.Text = "S"
+    btn.Font = Enum.Font.GothamBlack; btn.TextSize = 22; btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Parent = GUI; corner(btn, 26)
+    stroke(btn, Color3.fromRGB(255,255,255), 1.5, 0.5)
+    gradient(btn, Theme.accent, Theme.accent2, 45)
+    local logoId = getgenv().SyntaxLogoId
+    if logoId and logoId ~= "" then
+        local img = Instance.new("ImageLabel")
+        img.Size = UDim2.fromScale(1,1); img.BackgroundTransparency = 1; img.Image = logoId
+        img.Parent = btn; corner(img, 26)
+        btn.Text = ""
+    end
+    local dragging, dragStart, startPos
+    btn.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then dragging, dragStart, startPos = true, i.Position, btn.Position end
+    end)
+    btn.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then
+            if (i.Position - dragStart).Magnitude < 10 then GUI.Enabled = not GUI.Enabled end
+            dragging = false
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.Touch then
+            local d = i.Position - dragStart
+            btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end)
+end
+
+--==================================================================
+-- ХОТКЕИ
 --==================================================================
 UIS.InputBegan:Connect(function(i, gp)
     if gp then return end
@@ -277,22 +345,16 @@ UIS.InputBegan:Connect(function(i, gp)
 end)
 
 --==================================================================
--- СОЗДАНИЕ ОКНА
+-- ОКНО + ВКЛАДКИ
 --==================================================================
 local win = Window.new("Syntax", "Blox Fruits · PvP")
 local tabPvP    = win:Tab("PvP")
 local tabVisual = win:Tab("Визуал")
 local tabMisc   = win:Tab("Миск")
 
---==================================================================
--- УТИЛИТЫ PvP
---==================================================================
-local function alive(p)
-    return p and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0
-end
-local function root(p)
-    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-end
+--== Утилиты ==--
+local function alive(p) return p and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 end
+local function root(p) return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") end
 local function nearest(maxRange)
     local best, bestDist = nil, maxRange
     local myRoot = root(LP); if not myRoot then return nil end
@@ -305,32 +367,19 @@ local function nearest(maxRange)
     return best, bestDist
 end
 
---==================================================================
--- CombatAPI (заглушки под атаки/скиллы)
---==================================================================
 local CombatAPI = {}
 function CombatAPI.attack() pcall(function() mouse1click() end) end
 function CombatAPI.skill(i) if i then pcall(function() keypress(tostring(i)); task.wait(0.05); keyrelease(tostring(i)) end) end end
-function CombatAPI.dash()
-    local k = Flags["Dash Key"]; if k and k ~= "" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end
-end
+function CombatAPI.dash() local k = Flags["Dash Key"]; if k and k ~= "" then pcall(function() keypress(k); task.wait(0.05); keyrelease(k) end) end end
 function CombatAPI.parry() end
 getgenv().SyntaxCombat = CombatAPI
 
---==================================================================
--- Aimbot
---==================================================================
 RunService.RenderStepped:Connect(function()
     if not Flags["Aimbot"] then return end
-    local target = nearest(Flags["Aim Range"] or 40)
-    if target and root(target) then
-        cam.CFrame = CFrame.lookAt(cam.CFrame.Position, root(target).Position)
-    end
+    local t = nearest(Flags["Aim Range"] or 40)
+    if t and root(t) then cam.CFrame = CFrame.lookAt(cam.CFrame.Position, root(t).Position) end
 end)
 
---==================================================================
--- AutoParry (реакция на урон)
---==================================================================
 local lastHealth = nil
 RunService.Heartbeat:Connect(function()
     if not Flags["AutoParry"] then lastHealth = nil; return end
@@ -340,82 +389,122 @@ RunService.Heartbeat:Connect(function()
 end)
 
 --==================================================================
--- COMBO LIBRARY
+-- COMBO LIBRARY — ТОЛЬКО ФРУКТЫ
 --==================================================================
--- СЛОТЫ ИНСТРУМЕНТОВ: впиши свои номера хотбара 1..9
 local ToolSlots = {
-    -- ["Kitsune"]=1, ["Godhuman"]=2, ["CDK"]=3, ["Gravity Blade"]=4,
-    -- ["Superhuman"]=1, ["Venom Bow"]=2, ["Dragon"]=1, ["Ice"]=1,
-    -- ["Sanguine Art"]=1, ["Spikey Trident"]=2, ["Acidum Rifle"]=3,
+    -- ["Kitsune"]=1, ["Godhuman"]=2, ["CDK"]=3, ["Gravity Blade"]=4, ...
 }
 
--- БАЗА КОМБО
 local Raw = {
-    {name="Kitsune (Gravity Cane)", cat="Fruits", diff="Hard", target="Опытные", icon="",
-     combo="Gravity Blade Z -> Superhuman Z -> Venom Bow Z/X -> Dash -> Superhuman X -> Kitsune C -> Gravity Blade X"},
-    {name="Kitsune (Godhuman/CDK)", cat="Fruits", diff="Medium+", target="Опытные", icon="",
-     combo="CDK Z -> Kitsune C -> Kitsune X -> Kitsune Z -> Kitsune F -> Godhuman Z -> Godhuman C"},
-    {name="Control (Daggers)", cat="Fruits", diff="Medium", target="Все", icon="",
-     combo="Control X -> Control C -> Sword M1 x2 -> Godhuman Z -> Godhuman X -> Control V"},
-    {name="Venom", cat="Fruits", diff="Medium", target="Танки", icon="",
-     combo="Venom X -> Venom C -> Godhuman Z -> Godhuman X -> Venom V -> M1 spam"},
-    {name="Dragon", cat="Fruits", diff="Medium", target="Замесы", icon="",
-     combo="Dragon Z -> Dragon X -> Dragon C -> Godhuman Z -> Godhuman X"},
-    {name="Buddha (E-Claw)", cat="Fruits", diff="Easy", target="Выживание", icon="",
-     combo="Yama X -> Buddha X -> E-Claw X -> Soul Guitar Z -> Buddha V -> Buddha C"},
-    {name="Ice (новичкам)", cat="Fruits", diff="Easy+", target="Новички", icon="",
-     combo="Ice V -> Ice C -> Ice Z -> CDK Z -> CDK X -> Look back -> Sanguine Art C -> Z -> X"},
-    {name="Ice (Godhuman)", cat="Fruits", diff="Easy+", target="Новички", icon="",
-     combo="Ice V -> Ice C -> Godhuman M1 x2 -> Ice Z -> Godhuman Z -> C -> Spikey Trident X -> Godhuman X -> Ice X"},
-    {name="Rumble", cat="Fruits", diff="Medium", target="Все", icon="",
+    -- ==== Yeti ====
+    {name="Yeti · Trident+GH", cat="Yeti", diff="Medium", target="Танки", icon="",
+     combo="Yeti C -> Spikey Trident X -> Godhuman X -> Godhuman Z -> Godhuman C -> Yeti F -> Spikey Trident Z -> Yeti X -> Yeti Z"},
+    {name="Yeti · чистое", cat="Yeti", diff="Easy", target="Трансформ", icon="",
+     combo="Yeti C -> Yeti F -> Yeti X -> Yeti Z -> M1"},
+    {name="Yeti · Grav+Sanguine", cat="Yeti", diff="Medium", target="Лайфстил", icon="",
+     combo="Gravity Blade Z -> Sanguine Art Z -> Sanguine Art C -> Yeti F -> Gravity Blade X -> Sanguine Art X"},
+    -- ==== Dough ====
+    {name="Dough · мини-спам", cat="Dough", diff="Very Easy", target="Замес", icon="",
+     combo="Dough X -> Dough Z"},
+    {name="Dough · полная", cat="Dough", diff="Easy", target="Instinct", icon="",
+     combo="Dough V -> Dough X -> Dough C -> Look down -> Godhuman Z -> Godhuman C -> Godhuman X"},
+    {name="Dough · CDK", cat="Dough", diff="Medium", target="Стан", icon="",
+     combo="Dough X -> Dough V -> Dough C -> Godhuman Z -> Anchor Z -> Godhuman C -> Dough Z"},
+    {name="Dough · продвинутое", cat="Dough", diff="Hard", target="Хитбоксы", icon="",
+     combo="Dough X -> Dough C -> CDK Z -> Kabucha X -> Dough V -> Dough X -> Godhuman C (hold) -> CDK X -> Godhuman Z -> Godhuman X"},
+    -- ==== Spider ====
+    {name="Spider · Moonxyy", cat="Spider", diff="Easy", target="Все", icon="",
+     combo="Spider X -> Gravity Cane Z -> Spider Z -> Godhuman Z -> Godhuman X -> Godhuman C -> Spider V -> Spider C"},
+    {name="Spider · Dark Blade", cat="Spider", diff="Medium", target="Аим", icon="",
+     combo="Spider X -> Dark Blade Z -> Eclaw Z -> Eclaw C -> Dark Blade X -> Soul Guitar Z -> Spider V -> Spider Z"},
+    {name="Spider · Sanguine", cat="Spider", diff="Medium", target="Стиль", icon="",
+     combo="Spider X -> Spider Z (hold) -> Sanguine Art X -> Gravity Cane Z -> Spider V -> Sanguine Art C"},
+    {name="Spider · Gravity Cane", cat="Spider", diff="Medium", target="Талон", icon="",
+     combo="Gravity Cane X -> Spider V -> Spider X -> Kabucha X -> Spider C -> Gravity Cane Z -> Dragon Talon Z -> Spider Z"},
+    -- ==== Leopard / Tiger ====
+    {name="Leopard · простое", cat="Leopard", diff="Easy", target="Все", icon="",
+     combo="Leopard C -> M1 x3 -> Leopard Z"},
+    {name="Leopard · чистое", cat="Leopard", diff="Easy", target="Без оружия", icon="",
+     combo="Leopard M1 -> Leopard Z -> Leopard F -> Leopard X -> Leopard C"},
+    {name="Leopard · GH+Kabucha", cat="Leopard", diff="Medium", target="Продление", icon="",
+     combo="Leopard C -> Godhuman Z -> Kabucha X -> Leopard Z -> Leopard X"},
+    {name="Tiger · продвинутое", cat="Leopard", diff="Hard", target="Бесконечно", icon="",
+     combo="Tiger Z -> Tiger X -> Godhuman Z -> Tiger V -> Godhuman C -> M1 spam"},
+    -- ==== Kitsune ====
+    {name="Kitsune · Gravity Blade", cat="Kitsune", diff="Hard", target="Опытные", icon="",
+     combo="Gravity Blade Z -> Superhuman Z -> Venom Bow Z/X -> Dash -> Superhuman X -> Kitsune C -> Gravity Blade X -> Superhuman C"},
+    {name="Kitsune · Sanguine+Yama", cat="Kitsune", diff="Hard", target="Ghoul", icon="",
+     combo="Sanguine C -> Yama X -> Look back -> Kitsune C -> Kitsune X -> Sanguine Z -> Kitsune F -> Kitsune Z"},
+    {name="Kitsune · чистое", cat="Kitsune", diff="Medium", target="Повтор C", icon="",
+     combo="Kitsune C -> Kitsune X -> Kitsune Z -> Kitsune F -> Gravity Cane Z -> M1 x3"},
+    -- ==== Dragon ====
+    {name="Dragon · Trident", cat="Dragon", diff="Medium", target="AoE", icon="",
+     combo="Dragon C -> Dragon Trident X -> Godhuman X -> Godhuman C -> Godhuman Z"},
+    {name="Dragon · Talon", cat="Dragon", diff="Medium", target="Стан", icon="",
+     combo="Dragon Talon Z -> Dragon C -> Dragon Talon X -> Dough V (hold) -> Dough X"},
+    {name="Dragon · Eclaw", cat="Dragon", diff="Hard", target="Камера", icon="",
+     combo="Dragon X -> Flash Step -> Eclaw Z -> Twin Hooks Z -> Dragon C -> Dragon Z -> Eclaw C"},
+    -- ==== Venom ====
+    {name="Venom · Gravity Blade", cat="Venom", diff="Medium", target="Дот", icon="",
+     combo="Venom C -> Venom X -> Gravity Blade Z -> Venom Z (hold) -> Gravity Blade X -> Venom Bow Z"},
+    {name="Venom · Godhuman", cat="Venom", diff="Medium", target="Стан", icon="",
+     combo="Venom C -> Godhuman C -> Gravity X -> Gravity Z -> Godhuman Z -> Venom X -> Venom Z (hold)"},
+    {name="Venom · CDK", cat="Venom", diff="Medium", target="Instinct", icon="",
+     combo="Venom X -> Venom Z -> CDK X -> Godhuman Z -> Godhuman C -> Venom C"},
+    -- ==== Ice ====
+    {name="Ice · новичкам", cat="Ice", diff="Easy+", target="32k", icon="",
+     combo="Ice V -> Ice C -> Ice Z -> CDK Z -> CDK X -> Look back -> Sanguine Art C -> Sanguine Art Z -> Sanguine Art X"},
+    {name="Ice · Godhuman", cat="Ice", diff="Easy+", target="Новички", icon="",
+     combo="Ice V -> Ice C -> Godhuman M1 x2 -> Ice Z -> Godhuman Z -> Godhuman C -> Spikey Trident X -> Godhuman X -> Ice X"},
+    -- ==== Rumble ====
+    {name="Rumble · Godhuman", cat="Rumble", diff="Medium", target="Все", icon="",
      combo="Rumble C -> Rumble X -> Godhuman Z -> Godhuman C -> Sword M1 x2 -> Rumble V"},
-    {name="Shadow", cat="Fruits", diff="Medium", target="Все", icon="",
-     combo="Shadow C -> Shadow X -> Shadow V -> Godhuman Z -> Godhuman X -> Godhuman C"},
-    {name="Chop", cat="Fruits", diff="Medium", target="Фруктовики", icon="",
-     combo="Acidum Rifle Z -> Soru -> Chop X (hold) -> Godhuman Z -> Godhuman C -> CDK X -> Chop C (hold) -> Godhuman X"},
-    {name="Sand V2", cat="Fruits", diff="Medium", target="Мечники", icon="",
-     combo="Sand X -> Sand C -> Kabucha X -> Sand V -> Sand Z -> Spikey Trident X -> Godhuman Z -> Godhuman X -> Godhuman C"},
-    {name="Gravity", cat="Fruits", diff="Medium", target="Все", icon="",
+    {name="Rumble · мечникам", cat="Rumble", diff="Medium", target="Меч", icon="",
+     combo="Rumble X -> Sword M1 x3 -> Rumble C -> Godhuman Z -> Rumble V"},
+    -- ==== Dark ====
+    {name="Dark · Godhuman", cat="Dark", diff="Medium", target="Все", icon="",
+     combo="Dark C -> Dark X -> Dark V -> Godhuman Z -> Godhuman X -> Godhuman C"},
+    {name="Dark · Chop", cat="Dark", diff="Easy", target="Телепорт", icon="",
+     combo="Dark Step V -> Chop Z -> Chop C -> Chop X -> Dark Step X -> Dark Step C -> Dark Step Z"},
+    -- ==== Gravity ====
+    {name="Gravity · Dough", cat="Gravity", diff="Medium", target="Стартер", icon="",
+     combo="Gravity X -> Dough C -> Dough X -> Dough V -> CDK Z -> CDK X -> Godhuman Z -> Godhuman C"},
+    {name="Gravity · Godhuman", cat="Gravity", diff="Medium", target="Kabucha", icon="",
      combo="Gravity X -> Gravity V -> Godhuman Z -> Godhuman C -> CDK X -> Gravity Z -> Godhuman X -> Gravity C"},
-    {name="Pain", cat="Fruits", diff="Easy", target="Стиль", icon="",
-     combo="Gravity Z -> Godhuman C (hold) -> Godhuman C (hold) -> Pain F"},
-    {name="Love", cat="Fruits", diff="Easy", target="Все", icon="",
-     combo="E-Claw C -> E-Claw Z -> Yama X -> Love X -> Love C -> Love Z -> E-Claw X -> Love Z"},
-    {name="Portal (Canvander)", cat="Fruits", diff="Medium", target="Аим", icon="",
+    -- ==== Portal ====
+    {name="Portal · Canvander", cat="Portal", diff="Medium", target="23k", icon="",
      combo="Portal Z -> Canvander X -> Godhuman Z -> Godhuman C -> Portal V"},
-    {name="Gas", cat="Fruits", diff="Medium", target="Мета", icon="",
+    {name="Portal · TTK", cat="Portal", diff="Medium", target="Стан", icon="",
+     combo="Portal Z -> TTK X -> Sanguine Art X -> Sanguine Art C -> Sanguine Art Z -> TTK Z"},
+    -- ==== Gas ====
+    {name="Gas · Godhuman", cat="Gas", diff="Medium", target="Облака", icon="",
      combo="Gas X -> Gas C -> Godhuman Z -> Godhuman X -> Gas V"},
-    {name="Tiger", cat="Fruits", diff="Hard", target="Мета U28", icon="",
-     combo="Tiger Z -> M1 x3 -> Tiger X -> Tiger C -> M1 x2 -> Tiger Z"},
-    {name="Spirit", cat="Fruits", diff="Very Hard", target="Скилловые", icon="",
+    {name="Gas · Shark Anchor", cat="Gas", diff="Medium", target="Стан", icon="",
+     combo="Gas X -> Shark Anchor Z -> Gas C -> Godhuman Z -> Gas V"},
+    -- ==== Spirit ====
+    {name="Spirit · Godhuman", cat="Spirit", diff="Very Hard", target="Скилловые", icon="",
      combo="Spirit C -> Spirit X -> Spirit V -> Godhuman Z -> Godhuman C"},
-    {name="Mammoth", cat="Fruits", diff="Medium", target="Танки", icon="",
+    {name="Spirit · Sanguine", cat="Spirit", diff="Hard", target="Душа", icon="",
+     combo="Spirit C -> Sanguine Art Z -> Spirit X -> Sanguine Art C -> Spirit V"},
+    -- ==== Mammoth ====
+    {name="Mammoth · Godhuman", cat="Mammoth", diff="Medium", target="Танки", icon="",
      combo="Mammoth Z -> Mammoth X -> Mammoth C -> Godhuman Z -> Godhuman X"},
-    {name="Diamond", cat="Fruits", diff="Easy", target="Новички", icon="",
+    {name="Mammoth · без транса", cat="Mammoth", diff="Easy", target="Новички", icon="",
+     combo="Mammoth X -> Mammoth C -> Godhuman Z -> Mammoth Z"},
+    -- ==== Diamond ====
+    {name="Diamond · простое", cat="Diamond", diff="Easy", target="Обучение", icon="",
      combo="Diamond Z -> Diamond X -> Diamond C -> Superhuman Z -> Superhuman C"},
-    {name="Quake", cat="Fruits", diff="Medium", target="AoE", icon="",
+    -- ==== Quake ====
+    {name="Quake · Godhuman", cat="Quake", diff="Medium", target="AoE", icon="",
      combo="Quake X -> Quake C -> Quake V -> Godhuman Z -> Godhuman X"},
-    {name="Dough (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
-     combo="X -> Z -> C -> Look down -> Godhuman Z -> C -> X"},
-    {name="Spider (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
-     combo="X -> Gravity Cane Z -> Z -> Godhuman Z -> X -> C -> V -> C"},
-    {name="Leopard (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
-     combo="C -> M1 x3 -> Z"},
-    {name="Blizzard (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
-     combo="Godhuman C -> Blizzard C -> Gravity Cane Z -> Blizzard X -> Godhuman Z -> X"},
-    {name="Dark (short)", cat="Fruits", diff="Easy", target="Тест", icon="",
-     combo="Dark Step V -> Chop Z -> C -> X -> Dark Step X -> C -> Z"},
-    {name="T-Rex (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
-     combo="CDK X -> T-Rex X -> C -> Godhuman Z -> X -> C"},
-    {name="Ice (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
-     combo="V -> C -> Z -> CDK Z -> X -> Sanguine C -> Z -> X"},
-    {name="Control (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
-     combo="X -> C -> M1 x2 -> Godhuman Z -> X -> V"},
-    {name="Portal (short)", cat="Fruits", diff="Medium", target="Тест", icon="",
-     combo="Z -> Canvander X -> Godhuman Z -> C -> V"},
+    -- ==== Chop ====
+    {name="Chop · Acidum", cat="Chop", diff="Medium", target="Фруктовики", icon="",
+     combo="Acidum Rifle Z -> Soru -> Chop X (hold) -> Godhuman Z -> Godhuman C -> CDK X -> Chop C (hold) -> Godhuman X"},
+    -- ==== T-Rex ====
+    {name="T-Rex · CDK", cat="T-Rex", diff="Medium", target="Танки", icon="",
+     combo="CDK X -> T-Rex X -> T-Rex C -> Godhuman Z -> Godhuman X -> Godhuman C"},
 }
 
--- ПАРСЕР
 local function parseCombo(str)
     str = str:gsub("→", "|"):gsub("%->", "|"):gsub("/", "|")
     local steps = {}
@@ -452,11 +541,7 @@ local function parseCombo(str)
 end
 for _, c in ipairs(Raw) do c.steps = parseCombo(c.combo) end
 
--- ВЫПОЛНЕНИЕ
-local running = false
-local currentSlot = nil
-local runThread = nil
-
+local running, currentSlot, runThread = false, nil, nil
 local function switchTo(tool)
     if not tool or tool == "" then return end
     local slot = ToolSlots[tool]
@@ -466,7 +551,6 @@ local function switchTo(tool)
         currentSlot = slot; task.wait(0.12)
     end
 end
-
 local function execStep(step, delayMul)
     if step.type == "key" and step.key then
         switchTo(step.tool)
@@ -482,7 +566,6 @@ local function execStep(step, delayMul)
     end
     task.wait((step.delay or 0.2) * (delayMul or 1))
 end
-
 local function runCombo(combo)
     if runThread then task.cancel(runThread) end
     running = true
@@ -499,88 +582,104 @@ local function stopCombo()
     if runThread then task.cancel(runThread); runThread = nil end
 end
 
--- ОКНО COMBO LIBRARY
+--== Окно Combo Library ==--
 local SG = Instance.new("ScreenGui")
 SG.Name = "SyntaxCombos"; SG.ResetOnSpawn = false
-SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; SG.Enabled = false
-SG.Parent = GUI.Parent
+SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; SG.Enabled = false; SG.Parent = GUI.Parent
 
 local W = Instance.new("Frame")
-W.Size = UDim2.fromOffset(640, 410); W.Position = UDim2.new(0.5, -320, 0.5, -205)
+W.Size = UDim2.fromOffset(660, 420); W.Position = UDim2.new(0.5, -330, 0.5, -210)
 W.BackgroundColor3 = Theme.bg; W.BackgroundTransparency = 0.05; W.BorderSizePixel = 0; W.Parent = SG
-corner(W, 10); stroke(W, Color3.fromRGB(255,255,255), 1, 0.85)
+corner(W, 12); stroke(W, Color3.fromRGB(255,255,255), 1, 0.88); gradient(W, Theme.bg, Theme.bg2, 90)
 
-local hdr = Instance.new("Frame"); hdr.Size = UDim2.new(1, 0, 0, 36); hdr.BackgroundTransparency = 1; hdr.Parent = W
+local hdr = Instance.new("Frame"); hdr.Size = UDim2.new(1, 0, 0, 40); hdr.BackgroundTransparency = 1; hdr.Parent = W
+local hl = Instance.new("Frame"); hl.Size = UDim2.fromOffset(24,24); hl.Position = UDim2.fromOffset(12,8)
+hl.BackgroundColor3 = Theme.accent; hl.Parent = hdr; corner(hl,7); gradient(hl, Theme.accent, Theme.accent2, 45)
+local hlt = Instance.new("TextLabel"); hlt.BackgroundTransparency=1; hlt.Size=UDim2.fromScale(1,1); hlt.Font=Enum.Font.GothamBlack
+hlt.TextSize=13; hlt.TextColor3=Color3.fromRGB(255,255,255); hlt.Text="C"; hlt.Parent=hl
 local tl = Instance.new("TextLabel")
-tl.BackgroundTransparency = 1; tl.Position = UDim2.fromOffset(14, 0); tl.Size = UDim2.new(1, -40, 1, 0)
+tl.BackgroundTransparency = 1; tl.Position = UDim2.fromOffset(44, 6); tl.Size = UDim2.new(1, -80, 0, 20)
 tl.TextXAlignment = Enum.TextXAlignment.Left; tl.Font = Enum.Font.GothamBold; tl.TextSize = 15
-tl.TextColor3 = Theme.text; tl.Text = "Combo Library"; tl.Parent = hdr
+tl.TextColor3 = Theme.text; tl.Text = "Combo Library · Fruits"; tl.Parent = hdr
+gradient(tl, Color3.fromRGB(255,255,255), Theme.accent, 0)
 local cl = Instance.new("TextButton")
-cl.Size = UDim2.fromOffset(18, 18); cl.Position = UDim2.new(1, -26, 0, 9); cl.BackgroundColor3 = Theme.card
-cl.Text = "×"; cl.Font = Enum.Font.GothamBold; cl.TextSize = 14; cl.TextColor3 = Theme.text; cl.Parent = hdr; corner(cl, 6)
+cl.Size = UDim2.fromOffset(20,20); cl.Position = UDim2.new(1,-30,0,10); cl.BackgroundColor3 = Theme.card
+cl.Text = "×"; cl.Font = Enum.Font.GothamBold; cl.TextSize = 15; cl.TextColor3 = Theme.text; cl.Parent = hdr; corner(cl,7)
 cl.MouseButton1Click:Connect(function() SG.Enabled = false end)
 do
     local drag, ds, sp
-    hdr.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true; ds = i.Position; sp = W.Position end end)
-    hdr.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
-    UIS.InputChanged:Connect(function(i) if drag and i.UserInputType == Enum.UserInputType.MouseMovement then local d = i.Position - ds; W.Position = UDim2.new(sp.X.Scale, sp.X.Offset + d.X, sp.Y.Scale, sp.Y.Offset + d.Y) end end)
+    hdr.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=true; ds=i.Position; sp=W.Position end end)
+    hdr.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=false end end)
+    UIS.InputChanged:Connect(function(i) if drag and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local d=i.Position-ds; W.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end)
 end
 
-local cats = Instance.new("Frame")
-cats.Size = UDim2.new(0, 110, 1, -48); cats.Position = UDim2.fromOffset(10, 40)
-cats.BackgroundColor3 = Theme.panel; cats.BackgroundTransparency = 0.15; cats.Parent = W; corner(cats, 8)
+local cats = Instance.new("ScrollingFrame")
+cats.Size = UDim2.new(0, 130, 1, -52); cats.Position = UDim2.fromOffset(10, 46)
+cats.BackgroundColor3 = Theme.panel; cats.BackgroundTransparency = 0.2; cats.BorderSizePixel = 0
+cats.ScrollBarThickness = 2; cats.ScrollBarImageColor3 = Theme.accent
+cats.CanvasSize = UDim2.new(); cats.AutomaticCanvasSize = Enum.AutomaticSize.Y; cats.Parent = W; corner(cats, 10)
 local catList = Instance.new("UIListLayout"); catList.Padding = UDim.new(0, 4); catList.Parent = cats
 local catPad = Instance.new("UIPadding"); catPad.PaddingTop = UDim.new(0, 6); catPad.PaddingLeft = UDim.new(0, 6); catPad.PaddingRight = UDim.new(0, 6); catPad.Parent = cats
 
 local list = Instance.new("ScrollingFrame")
-list.Size = UDim2.new(0, 190, 1, -48); list.Position = UDim2.fromOffset(130, 40)
-list.BackgroundColor3 = Theme.panel; list.BackgroundTransparency = 0.15; list.BorderSizePixel = 0
+list.Size = UDim2.new(0, 210, 1, -52); list.Position = UDim2.fromOffset(150, 46)
+list.BackgroundColor3 = Theme.panel; list.BackgroundTransparency = 0.2; list.BorderSizePixel = 0
 list.ScrollBarThickness = 2; list.ScrollBarImageColor3 = Theme.accent
-list.CanvasSize = UDim2.new(); list.AutomaticCanvasSize = Enum.AutomaticSize.Y; list.Parent = W; corner(list, 8)
+list.CanvasSize = UDim2.new(); list.AutomaticCanvasSize = Enum.AutomaticSize.Y; list.Parent = W; corner(list, 10)
 local listL = Instance.new("UIListLayout"); listL.Padding = UDim.new(0, 5); listL.Parent = list
 local listPad = Instance.new("UIPadding"); listPad.PaddingTop = UDim.new(0, 6); listPad.PaddingLeft = UDim.new(0, 6); listPad.PaddingRight = UDim.new(0, 6); listPad.Parent = list
 
 local detail = Instance.new("Frame")
-detail.Size = UDim2.new(1, -340, 1, -48); detail.Position = UDim2.fromOffset(330, 40)
-detail.BackgroundColor3 = Theme.panel; detail.BackgroundTransparency = 0.15; detail.Parent = W; corner(detail, 8)
+detail.Size = UDim2.new(1, -380, 1, -52); detail.Position = UDim2.fromOffset(370, 46)
+detail.BackgroundColor3 = Theme.panel; detail.BackgroundTransparency = 0.2; detail.Parent = W; corner(detail, 10)
 
 local dIcon = Instance.new("ImageLabel")
-dIcon.Size = UDim2.fromOffset(60, 60); dIcon.Position = UDim2.fromOffset(12, 12); dIcon.BackgroundColor3 = Theme.card
-dIcon.Image = ""; dIcon.Parent = detail; corner(dIcon, 8)
+dIcon.Size = UDim2.fromOffset(64, 64); dIcon.Position = UDim2.fromOffset(12, 12)
+dIcon.BackgroundColor3 = Theme.card; dIcon.Image = ""; dIcon.Parent = detail; corner(dIcon, 10)
+local dIconFallback = Instance.new("TextLabel")
+dIconFallback.BackgroundTransparency = 1; dIconFallback.Size = UDim2.fromScale(1,1)
+dIconFallback.Font = Enum.Font.GothamBlack; dIconFallback.TextSize = 26; dIconFallback.TextColor3 = Theme.accent
+dIconFallback.Text = "?"; dIconFallback.Parent = dIcon
 
 local dName = Instance.new("TextLabel")
-dName.BackgroundTransparency = 1; dName.Position = UDim2.fromOffset(82, 12); dName.Size = UDim2.new(1, -92, 0, 20)
+dName.BackgroundTransparency = 1; dName.Position = UDim2.fromOffset(88, 14); dName.Size = UDim2.new(1, -100, 0, 20)
 dName.TextXAlignment = Enum.TextXAlignment.Left; dName.Font = Enum.Font.GothamBold; dName.TextSize = 14
 dName.TextColor3 = Theme.text; dName.Text = "—"; dName.Parent = detail
-
 local dMeta = Instance.new("TextLabel")
-dMeta.BackgroundTransparency = 1; dMeta.Position = UDim2.fromOffset(82, 32); dMeta.Size = UDim2.new(1, -92, 0, 18)
+dMeta.BackgroundTransparency = 1; dMeta.Position = UDim2.fromOffset(88, 34); dMeta.Size = UDim2.new(1, -100, 0, 18)
 dMeta.TextXAlignment = Enum.TextXAlignment.Left; dMeta.Font = Enum.Font.Gotham; dMeta.TextSize = 11
 dMeta.TextColor3 = Theme.accent; dMeta.Text = ""; dMeta.Parent = detail
 
 local dSteps = Instance.new("ScrollingFrame")
-dSteps.BackgroundTransparency = 1; dSteps.Position = UDim2.fromOffset(12, 82); dSteps.Size = UDim2.new(1, -24, 1, -160)
+dSteps.BackgroundTransparency = 1; dSteps.Position = UDim2.fromOffset(12, 86); dSteps.Size = UDim2.new(1, -24, 1, -170)
 dSteps.BorderSizePixel = 0; dSteps.ScrollBarThickness = 2; dSteps.ScrollBarImageColor3 = Theme.accent
 dSteps.CanvasSize = UDim2.new(); dSteps.AutomaticCanvasSize = Enum.AutomaticSize.Y; dSteps.Parent = detail
 local dStepsL = Instance.new("UIListLayout"); dStepsL.Padding = UDim.new(0, 2); dStepsL.Parent = dSteps
 
 local runBtn = Instance.new("TextButton")
-runBtn.Size = UDim2.new(1, -24, 0, 30); runBtn.Position = UDim2.new(0, 12, 1, -78)
+runBtn.Size = UDim2.new(1, -24, 0, 32); runBtn.Position = UDim2.new(0, 12, 1, -84)
 runBtn.BackgroundColor3 = Theme.accent; runBtn.Text = "▶  ЗАПУСТИТЬ"; runBtn.Font = Enum.Font.GothamBold
-runBtn.TextSize = 13; runBtn.TextColor3 = Color3.fromRGB(255,255,255); runBtn.Parent = detail; corner(runBtn, 7)
+runBtn.TextSize = 13; runBtn.TextColor3 = Color3.fromRGB(255,255,255); runBtn.Parent = detail; corner(runBtn, 8)
+gradient(runBtn, Theme.accent, Theme.accent2, 0)
 local stopBtn = Instance.new("TextButton")
-stopBtn.Size = UDim2.new(1, -24, 0, 26); stopBtn.Position = UDim2.new(0, 12, 1, -44)
+stopBtn.Size = UDim2.new(1, -24, 0, 28); stopBtn.Position = UDim2.new(0, 12, 1, -48)
 stopBtn.BackgroundColor3 = Theme.card; stopBtn.Text = "■  СТОП"; stopBtn.Font = Enum.Font.GothamMedium
-stopBtn.TextSize = 12; stopBtn.TextColor3 = Theme.text; stopBtn.Parent = detail; corner(stopBtn, 7)
+stopBtn.TextSize = 12; stopBtn.TextColor3 = Theme.text; stopBtn.Parent = detail; corner(stopBtn, 8)
 
 local selected = nil
 local function renderDetail(combo)
     selected = combo
     for _, ch in ipairs(dSteps:GetChildren()) do if ch:IsA("TextLabel") then ch:Destroy() end end
-    if not combo then dName.Text = "—"; dMeta.Text = ""; dIcon.Image = ""; return end
+    if not combo then dName.Text = "—"; dMeta.Text = ""; dIcon.Image = ""; dIconFallback.Text = "?"; return end
     dName.Text = combo.name
     dMeta.Text = string.format("%s · %s · %s", combo.cat, combo.diff, combo.target)
-    dIcon.Image = combo.icon or ""
+    local icon = FruitIcons[combo.cat]
+    if icon and icon ~= "" then
+        dIcon.Image = icon; dIconFallback.Visible = false
+    else
+        dIcon.Image = ""; dIconFallback.Visible = true
+        dIconFallback.Text = string.sub(combo.cat, 1, 1)
+    end
     for i, s in ipairs(combo.steps) do
         local lbl = Instance.new("TextLabel")
         lbl.Size = UDim2.new(1, 0, 0, 18); lbl.BackgroundTransparency = 1
@@ -596,7 +695,7 @@ local function rebuildList(cat)
             local b = Instance.new("TextButton")
             b.Size = UDim2.new(1, 0, 0, 30); b.BackgroundColor3 = Theme.card; b.BackgroundTransparency = 0.25
             b.Text = "  " .. combo.name; b.TextXAlignment = Enum.TextXAlignment.Left
-            b.Font = Enum.Font.GothamMedium; b.TextSize = 12; b.TextColor3 = Theme.text; b.Parent = list; corner(b, 6)
+            b.Font = Enum.Font.GothamMedium; b.TextSize = 12; b.TextColor3 = Theme.text; b.Parent = list; corner(b, 7)
             b.MouseButton1Click:Connect(function() renderDetail(combo) end)
             b.MouseEnter:Connect(function() tween(b, 0.12, { BackgroundTransparency = 0.05 }) end)
             b.MouseLeave:Connect(function() tween(b, 0.12, { BackgroundTransparency = 0.25 }) end)
@@ -607,26 +706,32 @@ end
 local catButtons = {}
 local function selectCat(cat)
     for c, btn in pairs(catButtons) do
-        tween(btn, 0.15, { BackgroundTransparency = (c == cat) and 0.75 or 1,
+        tween(btn, 0.15, { BackgroundTransparency = (c == cat) and 0.7 or 1,
             TextColor3 = (c == cat) and Theme.text or Theme.dim })
     end
     rebuildList(cat); renderDetail(nil)
 end
-for _, cat in ipairs({"Fruits", "Swords", "Styles", "Guns"}) do
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(1, 0, 0, 30); b.BackgroundColor3 = Theme.card; b.BackgroundTransparency = 1
-    b.Text = "  " .. cat; b.TextXAlignment = Enum.TextXAlignment.Left
-    b.Font = Enum.Font.GothamMedium; b.TextSize = 12; b.TextColor3 = Theme.dim; b.Parent = cats; corner(b, 6)
-    b.MouseButton1Click:Connect(function() selectCat(cat) end)
-    catButtons[cat] = b
+
+-- уникальные категории (фрукты) в порядке появления
+local seen = {}
+for _, c in ipairs(Raw) do
+    if not seen[c.cat] then
+        seen[c.cat] = true
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(1, 0, 0, 30); b.BackgroundColor3 = Theme.card; b.BackgroundTransparency = 1
+        b.Text = "  " .. c.cat; b.TextXAlignment = Enum.TextXAlignment.Left
+        b.Font = Enum.Font.GothamMedium; b.TextSize = 12; b.TextColor3 = Theme.dim; b.Parent = cats; corner(b, 7)
+        b.MouseButton1Click:Connect(function() selectCat(c.cat) end)
+        catButtons[c.cat] = b
+    end
 end
-selectCat("Fruits")
+selectCat(Raw[1].cat)
 
 runBtn.MouseButton1Click:Connect(function() if selected then runCombo(selected) end end)
 stopBtn.MouseButton1Click:Connect(stopCombo)
 
 --==================================================================
--- ВИДЖЕТЫ В ОКНЕ
+-- ВИДЖЕТЫ
 --==================================================================
 win:Toggle(tabPvP, "Aimbot", false)
 win:Slider(tabPvP, "Aim Range", 5, 120, 40)
@@ -645,4 +750,4 @@ end)
 
 getgenv().Syntax = { Window = Window, win = win, Theme = Theme, Flags = Flags }
 getgenv().SyntaxCombos = { list = Raw, run = runCombo, stop = stopCombo, parse = parseCombo }
-print("[Syntax] Загружено. Комбо: " .. #Raw .. " | Меню: RightShift | Комбо: LeftAlt")
+print("[Syntax] v3 загружен. Комбо: " .. #Raw .. " | Меню: RightShift | Комбо: LeftAlt")
